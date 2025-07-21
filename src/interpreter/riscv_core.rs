@@ -10,17 +10,15 @@ use crate::interpreter::extensions::rv32i::*;
 use crate::interpreter::extensions::rv32m::*;
 use crate::interpreter::extensions::rv32privileged::*;
 use crate::interpreter::extensions::rv32zicrs::*;
-use crate::interpreter::mmu::Mmu;
+use crate::interpreter::bus::Bus;
 
 pub struct RVCore {
     // x0/zero -> Siempre 0
     registers: [u32; 31],
     pub pc: u32,
 
-    // csrs: [u8; 4096],
     pub control_and_status: ControlAndStatus,
 
-    // pub id: usize,
     pub privilege_level: PrivilegeLevel,
 }
 
@@ -142,17 +140,17 @@ impl RVCore {
 
         match funct3 {
             // ADDI
-            0x0 => Some(IInstruction::new(rs1, imm_val, rd, addi)),
+            0x0 => Some(IInstruction::new(instr, rs1, imm_val, rd, addi)),
             // XORI
-            0x4 => Some(IInstruction::new(rs1, imm_val, rd, xori)),
+            0x4 => Some(IInstruction::new(instr, rs1, imm_val, rd, xori)),
             // ORI
-            0x6 => Some(IInstruction::new(rs1, imm_val, rd, ori)),
+            0x6 => Some(IInstruction::new(instr, rs1, imm_val, rd, ori)),
             // ANDI
-            0x7 => Some(IInstruction::new(rs1, imm_val, rd, andi)),
+            0x7 => Some(IInstruction::new(instr, rs1, imm_val, rd, andi)),
             // SLLI
             0x1 => {
                 if (imm_val >> 5) & 0x7F == 0x00 {
-                    Some(IInstruction::new(rs1, imm_val & 0x1F, rd, slli))
+                    Some(IInstruction::new(instr, rs1, imm_val & 0x1F, rd, slli))
                 } else {
                     None
                 }
@@ -160,18 +158,18 @@ impl RVCore {
             0x5 => {
                 if (imm_val >> 5) & 0x7F == 0x00 {
                     // SRLI
-                    Some(IInstruction::new(rs1, imm_val & 0x1F, rd, srli))
+                    Some(IInstruction::new(instr, rs1, imm_val & 0x1F, rd, srli))
                 } else if (imm_val >> 5) & 0x7F == 0x20 {
                     // SRAI
-                    Some(IInstruction::new(rs1, imm_val & 0x1F, rd, srai))
+                    Some(IInstruction::new(instr, rs1, imm_val & 0x1F, rd, srai))
                 } else {
                     None
                 }
             }
             // SLTI
-            0x2 => Some(IInstruction::new(rs1, imm_val, rd, slti)),
+            0x2 => Some(IInstruction::new(instr, rs1, imm_val, rd, slti)),
             // SLTIU
-            0x3 => Some(IInstruction::new(rs1, imm_val, rd, sltui)),
+            0x3 => Some(IInstruction::new(instr, rs1, imm_val, rd, sltui)),
 
             _ => None,
         }
@@ -186,11 +184,11 @@ impl RVCore {
         let imm_val = get_i_imm_val(imm);
 
         match funct3 {
-            0x0 => Some(IInstruction::new(rs1, imm_val, rd, lb)),
-            0x1 => Some(IInstruction::new(rs1, imm_val, rd, lh)),
-            0x2 => Some(IInstruction::new(rs1, imm_val, rd, lw)),
-            0x4 => Some(IInstruction::new(rs1, imm_val, rd, lbu)),
-            0x5 => Some(IInstruction::new(rs1, imm_val, rd, lhu)),
+            0x0 => Some(IInstruction::new(instr, rs1, imm_val, rd, lb)),
+            0x1 => Some(IInstruction::new(instr, rs1, imm_val, rd, lh)),
+            0x2 => Some(IInstruction::new(instr, rs1, imm_val, rd, lw)),
+            0x4 => Some(IInstruction::new(instr, rs1, imm_val, rd, lbu)),
+            0x5 => Some(IInstruction::new(instr, rs1, imm_val, rd, lhu)),
 
             _ => None,
         }
@@ -248,7 +246,7 @@ impl RVCore {
         let imm_val = get_i_imm_val(imm);
 
         if funct3 == 0x0 {
-            Some(IInstruction::new(rs1, imm_val, rd, jarl))
+            Some(IInstruction::new(instr, rs1, imm_val, rd, jarl))
         } else {
             None
         }
@@ -355,20 +353,20 @@ impl RVCore {
         match funct3 {
             // 0x1 => todo!("CSRRW"),
             0x0 => match (csr, rs1, rd) {
-                (0, 0, 0) => Some(IInstruction::new(rs1, csr, rd, ecall)),
-                (1, 0, 0) => Some(IInstruction::new(rs1, csr, rd, ebreak)),
+                (0, 0, 0) => Some(IInstruction::new(instr, rs1, csr, rd, ecall)),
+                (1, 0, 0) => Some(IInstruction::new(instr, rs1, csr, rd, ebreak)),
 
                 // Tecnicamente son instrucciones R, pero asi me simplifica la vida
-                (0x102, 0, 0) => Some(IInstruction::new(rs1, csr, rd, sret)),
-                (0x302, 0, 0) => Some(IInstruction::new(rs1, csr, rd, mret)),
+                (0x102, 0, 0) => Some(IInstruction::new(instr, rs1, csr, rd, sret)),
+                (0x302, 0, 0) => Some(IInstruction::new(instr, rs1, csr, rd, mret)),
                 _ => None,
             },
-            0x1 => Some(IInstruction::new(rs1, csr, rd, csrrw)),
-            0x2 => Some(IInstruction::new(rs1, csr, rd, csrrs)),
-            0x3 => Some(IInstruction::new(rs1, csr, rd, csrrc)),
-            0x5 => Some(IInstruction::new(rs1, csr, rd, csrrwi)),
-            0x6 => Some(IInstruction::new(rs1, csr, rd, csrrsi)),
-            0x7 => Some(IInstruction::new(rs1, csr, rd, csrrci)),
+            0x1 => Some(IInstruction::new(instr, rs1, csr, rd, csrrw)),
+            0x2 => Some(IInstruction::new(instr, rs1, csr, rd, csrrs)),
+            0x3 => Some(IInstruction::new(instr, rs1, csr, rd, csrrc)),
+            0x5 => Some(IInstruction::new(instr, rs1, csr, rd, csrrwi)),
+            0x6 => Some(IInstruction::new(instr, rs1, csr, rd, csrrsi)),
+            0x7 => Some(IInstruction::new(instr, rs1, csr, rd, csrrci)),
 
             _ => None,
         }
@@ -384,7 +382,7 @@ impl RVCore {
         let imm_val = get_i_imm_val(instr);
 
         if funct3 == 0 {
-            Some(IInstruction::new(rs1, imm_val, rd, fence))
+            Some(IInstruction::new(instr, rs1, imm_val, rd, fence))
         } else {
             None
         }
@@ -392,15 +390,15 @@ impl RVCore {
 }
 
 fn get_i_imm_val(instr: u32) -> u32 {
-    let imm_31_11 = 0xFFFFF800 * (instr >> 31 & 1);
+    let imm_31_11 = 0xFFFFF800 * ((instr >> 31) & 1);
     let imm_10_0 = (instr >> 20) & 0x7FF;
 
     imm_31_11 | imm_10_0
 }
 
 fn get_s_imm_val(instr: u32) -> u32 {
-    let imm_31_11 = 0xFFFFF800 * (instr >> 31 & 1);
-    let imm_10_5 = (instr >> 25) & 0x3F;
+    let imm_31_11 = 0xFFFFF800 * ((instr >> 31) & 1);
+    let imm_10_5 = ((instr >> 25) & 0x3F) << 5;
     let imm_4_0 = (instr >> 7) & 0x1F;
 
     imm_31_11 | imm_10_5 | imm_4_0
@@ -408,9 +406,12 @@ fn get_s_imm_val(instr: u32) -> u32 {
 
 fn get_b_imm_val(instr: u32) -> u32 {
     let imm_31_12 = 0xFFFFF000 * (instr >> 31);
-    let imm_11 = (instr & (1 << 7)) << 4;
-    let imm_10_5 = (instr & (0b0111111 << 25)) >> 20;
-    let imm_4_1 = (instr & (0b1111 << 8)) >> 7;
+    // let imm_11 = (instr & (1 << 7)) << 4;
+    // let imm_10_5 = (instr & (0b0111111 << 25)) >> 20;
+    // let imm_4_1 = (instr & (0b1111 << 8)) >> 7;
+    let imm_11 = ((instr >> 7) & 1) << 11;
+    let imm_10_5 = ((instr >> 25) & 0x3F) << 5;
+    let imm_4_1 = ((instr >> 8) & 0xF) << 1;
 
     imm_31_12 | imm_11 | imm_10_5 | imm_4_1
 }
@@ -443,7 +444,7 @@ pub enum InstructionType {
 }
 
 impl InstructionType {
-    pub fn execute(&mut self, mmu: &mut Mmu, core: &mut RVCore) -> Result<(), Exception> {
+    pub fn execute(&mut self, mmu: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
         match self {
             Self::R(instr) => instr.execute(core),
             Self::I(instr) => instr.execute(mmu, core),
@@ -489,17 +490,21 @@ pub struct IInstruction {
     pub imm: u32,
     pub rd: u32,
 
-    function: fn(&IInstruction, &Mmu, &mut RVCore) -> Result<(), Exception>,
+    pub data: u32,
+
+    function: fn(&IInstruction, &Bus, &mut RVCore) -> Result<(), Exception>,
 }
 
 impl IInstruction {
     pub fn new(
+        data: u32,
         rs1: u32,
         imm: u32,
         rd: u32,
-        function: fn(&IInstruction, &Mmu, &mut RVCore) -> Result<(), Exception>,
+        function: fn(&IInstruction, &Bus, &mut RVCore) -> Result<(), Exception>,
     ) -> Self {
         Self {
+            data,
             rs1,
             imm,
             rd,
@@ -507,7 +512,7 @@ impl IInstruction {
         }
     }
 
-    fn execute(&mut self, mmu: &mut Mmu, core: &mut RVCore) -> Result<(), Exception> {
+    fn execute(&mut self, mmu: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
         (self.function)(self, mmu, core)
     }
 }
@@ -517,7 +522,7 @@ pub struct SInstruction {
     pub rs2: u32,
     pub imm: u32,
 
-    function: fn(&Self, &mut Mmu, &mut RVCore) -> Result<(), Exception>,
+    function: fn(&Self, &mut Bus, &mut RVCore) -> Result<(), Exception>,
 }
 
 impl SInstruction {
@@ -525,7 +530,7 @@ impl SInstruction {
         rs1: u32,
         rs2: u32,
         imm: u32,
-        function: fn(&Self, &mut Mmu, &mut RVCore) -> Result<(), Exception>,
+        function: fn(&Self, &mut Bus, &mut RVCore) -> Result<(), Exception>,
     ) -> Self {
         Self {
             rs1,
@@ -535,7 +540,7 @@ impl SInstruction {
         }
     }
 
-    pub fn execute(&mut self, mmu: &mut Mmu, core: &mut RVCore) -> Result<(), Exception> {
+    pub fn execute(&mut self, mmu: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
         (self.function)(self, mmu, core)
     }
 }
@@ -611,7 +616,7 @@ impl UInstruction {
     }
 
     pub fn execute(&mut self, core: &mut RVCore) -> Result<(), Exception> {
-        (self.function)(&self, core)
+        (self.function)(self, core)
     }
 }
 
@@ -620,11 +625,8 @@ pub struct AtomicInstruction {
     pub rs2: u32,
     pub rs1: u32,
     pub rd: u32,
-    // pub mmu: &'a mut Mmu,
-    // pub core: &'a mut RVCore,
 
-    // function: fn(u32, u32, u32, &mut Mmu, &mut RVCore) -> Result<(), Exception>,
-    function: fn(&Self, &mut Mmu, &mut RVCore) -> Result<(), Exception>,
+    function: fn(&Self, &mut Bus, &mut RVCore) -> Result<(), Exception>,
 }
 
 impl AtomicInstruction {
@@ -633,23 +635,19 @@ impl AtomicInstruction {
         rs1: u32,
         rs2: u32,
         rd: u32,
-        // mmu: &'a mut Mmu,
-        // core: &'a mut RVCore,
-        // function: fn(u32, u32, u32, &mut Mmu, &mut RVCore) -> Result<(), Exception>,
-        function: fn(&Self, &mut Mmu, &mut RVCore) -> Result<(), Exception>,
+        
+        function: fn(&Self, &mut Bus, &mut RVCore) -> Result<(), Exception>,
     ) -> Self {
         Self {
             _constraint_bits: constraint_bits,
             rs2,
             rs1,
             rd,
-            // mmu,
-            // core,
             function,
         }
     }
 
-    pub fn execute(&mut self, mmu: &mut Mmu, core: &mut RVCore) -> Result<(), Exception> {
+    pub fn execute(&mut self, mmu: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
         // (self.function)(self.rs1, self.rs2, self.rd, self.mmu, self.core)
         (self.function)(self, mmu, core)
     }

@@ -1,7 +1,7 @@
-use crate::interpreter::{mmu::Mmu, riscv_core::{Exception, IInstruction, PrivilegeLevel, RVCore}};
+use crate::interpreter::{bus::Bus, riscv_core::{Exception, IInstruction, PrivilegeLevel, RVCore}};
 
 
-pub fn ecall(_: &IInstruction, _: &Mmu, core: &mut RVCore) -> Result<(), Exception> {
+pub fn ecall(_: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
     match core.privilege_level {
         PrivilegeLevel::Machine => Err(Exception::EnviromentCallFromMMode),
         PrivilegeLevel::Supervisor => Err(Exception::EnviromentCallFromSMode),
@@ -9,11 +9,11 @@ pub fn ecall(_: &IInstruction, _: &Mmu, core: &mut RVCore) -> Result<(), Excepti
     }
 }
 
-pub fn ebreak(_: &IInstruction, _: &Mmu, _: &mut RVCore) -> Result<(), Exception> {
+pub fn ebreak(_: &IInstruction, _: &Bus, _: &mut RVCore) -> Result<(), Exception> {
     Err(Exception::Breakpoint)
 }
 
-pub fn mret(_: &IInstruction, _: &Mmu, core: &mut RVCore) -> Result<(), Exception> {
+pub fn mret(_: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
     let mstatus = core.control_and_status.get_mstatus_mut_ref(core.privilege_level)?;
 
     let mpp = mstatus.get_mpp();
@@ -33,6 +33,6 @@ pub fn mret(_: &IInstruction, _: &Mmu, core: &mut RVCore) -> Result<(), Exceptio
 }
 
 // TODO SRET
-pub fn sret(_: &IInstruction, _: &Mmu, _: &mut RVCore) -> Result<(), Exception> {
+pub fn sret(_: &IInstruction, _: &Bus, _: &mut RVCore) -> Result<(), Exception> {
     Ok(())
 }
