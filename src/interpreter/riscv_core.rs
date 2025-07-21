@@ -179,9 +179,8 @@ impl RVCore {
         let rd = (instr >> 7) & 0x1F;
         let funct3 = (instr >> 12) & 0x7;
         let rs1 = (instr >> 15) & 0x1F;
-        let imm = (instr >> 20) & 0xFFF;
 
-        let imm_val = get_i_imm_val(imm);
+        let imm_val = get_i_imm_val(instr);
 
         match funct3 {
             0x0 => Some(IInstruction::new(instr, rs1, imm_val, rd, lb)),
@@ -241,12 +240,11 @@ impl RVCore {
         let rd = (instr >> 7) & 0x1F;
         let funct3 = (instr >> 12) & 0x7;
         let rs1 = (instr >> 15) & 0x1F;
-        let imm = (instr >> 20) & 0xFFF;
 
-        let imm_val = get_i_imm_val(imm);
+        let imm_val = get_i_imm_val(instr);
 
         if funct3 == 0x0 {
-            Some(IInstruction::new(instr, rs1, imm_val, rd, jarl))
+            Some(IInstruction::new(instr, rs1, imm_val, rd, jalr))
         } else {
             None
         }

@@ -71,6 +71,10 @@ impl Interpreter {
             
             let mut exception = None;
 
+            if self.core.pc == 0x80000248 {
+                println!("DEBUG");
+            }
+
             match instr_bytes {
                 Ok(fetched) => {
                     let instr = self.decode(fetched);
@@ -99,8 +103,13 @@ impl Interpreter {
     }
 
     #[cfg(test)]
-    pub fn read_test_result(&self) -> u8 {
-        self.bus.dram[0x80001000 - 0x80000000]
+    pub fn read_test_result(&self) -> u32 {
+        let val_1 = self.bus.dram[0x80001000 - 0x80000000];
+        let val_2 = self.bus.dram[0x80001000 - 0x80000000 + 1];
+        let val_3 = self.bus.dram[0x80001000 - 0x80000000 + 2];
+        let val_4 = self.bus.dram[0x80001000 - 0x80000000 + 3];
+
+        u32::from_le_bytes([val_1, val_2, val_3, val_4])
     }
 
     #[cfg(not(test))]

@@ -251,7 +251,7 @@ pub fn sh(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     }
 
     bus.write_byte(addres as usize, rs2_val as u8)?;
-    bus.write_byte(addres.wrapping_add(1) as usize, (instr.rs2 >> 8) as u8)
+    bus.write_byte(addres.wrapping_add(1) as usize, (rs2_val >> 8) as u8)
 }
 
 pub fn sw(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
@@ -367,9 +367,9 @@ pub fn jal(instr: &JInstruction, core: &mut RVCore) -> Result<(), Exception> {
     Ok(())
 }
 
-pub fn jarl(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn jalr(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
-    let new_pc = rs1_val.wrapping_add(instr.imm);
+    let new_pc = rs1_val.wrapping_add(instr.imm) & 0xFFFFFFFE;
     if new_pc % 4 != 0 {
         return Err(Exception::InstructionAddressMisaligned);
     }
