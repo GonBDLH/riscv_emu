@@ -7,11 +7,11 @@ use crate::interpreter::{
     riscv_core::{Exception, InstructionType, RVCore},
 };
 
+mod bus;
 mod csr;
 mod extensions;
-mod bus;
-mod riscv_core;
 mod mmu;
+mod riscv_core;
 
 const NUM_HARTS: usize = 1;
 
@@ -42,17 +42,18 @@ impl Interpreter {
 
             if let Record::Data { offset, value } = record {
                 value.iter().enumerate().for_each(|(add, val)| {
-                    let _ = self.bus.write_byte(0x80000000 + offset as usize + add, *val);
+                    let _ = self
+                        .bus
+                        .write_byte(0x80000000 + offset as usize + add, *val);
                 });
             }
         }
-
     }
 
     pub fn fetch(&mut self) -> Result<u32, Exception> {
         let val = self
             .bus
-            .read_word(self.core.pc as usize)
+            .read_aligned_word(self.core.pc as usize)
             .map_err(|_| Exception::InstructionAccessFault)?;
 
         Ok(val)
@@ -64,15 +65,17 @@ impl Interpreter {
 
     #[cfg(test)]
     pub fn run(&mut self) {
-        let mut i = 0;
-
-        while i < 0x1000 {
+        loop {
             let instr_bytes = self.fetch();
-            
+
             let mut exception = None;
 
-            if self.core.pc == 0x80000248 {
+            if self.core.pc == 0x80000f8c {
                 println!("DEBUG");
+            }
+
+            if self.core.pc == 0x8000004c {
+                break;
             }
 
             match instr_bytes {
@@ -94,20 +97,19 @@ impl Interpreter {
             }
 
             if let Some(exc) = exception {
-                exc.trap(&mut self.core);           
+                exc.trap(&mut self.core);
             }
-        
-            i += 1;
+
         }
         // println!("TEST");
     }
 
     #[cfg(test)]
-    pub fn read_test_result(&self) -> u32 {
-        let val_1 = self.bus.dram[0x80001000 - 0x80000000];
-        let val_2 = self.bus.dram[0x80001000 - 0x80000000 + 1];
-        let val_3 = self.bus.dram[0x80001000 - 0x80000000 + 2];
-        let val_4 = self.bus.dram[0x80001000 - 0x80000000 + 3];
+    pub fn read_test_result(&self, to_host: usize) -> u32 {
+        let val_1 = self.bus.dram[to_host - 0x80000000];
+        let val_2 = self.bus.dram[to_host - 0x80000000 + 1];
+        let val_3 = self.bus.dram[to_host - 0x80000000 + 2];
+        let val_4 = self.bus.dram[to_host - 0x80000000 + 3];
 
         u32::from_le_bytes([val_1, val_2, val_3, val_4])
     }
@@ -116,7 +118,7 @@ impl Interpreter {
     pub fn run(&mut self) {
         loop {
             let instr_bytes = self.fetch();
-            
+
             let mut exception = None;
 
             match instr_bytes {
@@ -137,12 +139,9 @@ impl Interpreter {
                 Err(fetch_exception) => exception = Some(fetch_exception),
             }
 
-        
             if let Some(exc) = exception {
-                exc.trap(&mut self.core);           
+                exc.trap(&mut self.core);
             }
         }
     }
-
-
 }

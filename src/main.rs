@@ -1,4 +1,3 @@
-
 use riscv_emu::interpreter::Interpreter;
 
 fn main() {

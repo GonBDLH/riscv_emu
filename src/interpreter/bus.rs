@@ -1,38 +1,23 @@
 #![allow(clippy::items_after_test_module)]
 
-use crate::{interpreter::{riscv_core::Exception, NUM_HARTS}, peripherals::uart_16550::Uart16550};
+use std::collections::HashSet;
 
-// #[cfg(not(test))]
-mod addresses {
-    pub const DRAM_BASE: usize = 0x80000000;
-    pub const DRAM_SIZE: usize = 8 * 1024 * 1024;
-    pub const DRAM_END: usize = DRAM_BASE + DRAM_SIZE;
+use crate::{
+    interpreter::{NUM_HARTS, riscv_core::Exception},
+    peripherals::uart_16550::Uart16550,
+};
 
-    pub const ROM_BASE: usize = 0x00001000;
-    pub const ROM_SIZE: usize = 0x00001000;
-    pub const ROM_END: usize = ROM_BASE + ROM_SIZE;
+pub const DRAM_BASE: usize = 0x80000000;
+pub const DRAM_SIZE: usize = 8 * 1024 * 1024;
+pub const DRAM_END: usize = DRAM_BASE + DRAM_SIZE;
 
-    pub const UART_BASE: usize = 0x10000000;
-    pub const UART_SIZE: usize = 8;
-    pub const UART_END: usize = UART_BASE + UART_SIZE;
-}
+pub const ROM_BASE: usize = 0x00001000;
+pub const ROM_SIZE: usize = 0x00001000;
+pub const ROM_END: usize = ROM_BASE + ROM_SIZE;
 
-// #[cfg(test)]
-// mod addresses {
-//     pub const DRAM_BASE: usize = 0x80000000;
-//     pub const DRAM_SIZE: usize = 0x1000;
-//     pub const DRAM_END: usize = DRAM_BASE + DRAM_SIZE;
-
-//     pub const ROM_BASE: usize = 0x00001000;
-//     pub const ROM_SIZE: usize = 0x00001000;
-//     pub const ROM_END: usize = ROM_BASE + ROM_SIZE;
-
-//     pub const UART_BASE: usize = 0x80001000;
-//     pub const UART_SIZE: usize = 8;
-//     pub const UART_END: usize = UART_BASE + UART_SIZE;
-// }
-
-use addresses::*;
+pub const UART_BASE: usize = 0x10000000;
+pub const UART_SIZE: usize = 8;
+pub const UART_END: usize = UART_BASE + UART_SIZE;
 
 pub struct Bus {
     #[cfg(test)]
@@ -45,7 +30,7 @@ pub struct Bus {
     pub uart: Uart16550,
 
     // PARA RV32A
-    reserved_addresses: [Option<usize>; NUM_HARTS],
+    reserved_addresses: [HashSet<usize>; NUM_HARTS],
 }
 
 impl Default for Bus {
@@ -54,7 +39,7 @@ impl Default for Bus {
             dram: vec![0x00; DRAM_SIZE],
             rom: vec![0x00; ROM_SIZE],
             uart: Uart16550::new(),
-            reserved_addresses: [None; NUM_HARTS],
+            reserved_addresses: [HashSet::new(); NUM_HARTS],
         }
     }
 }
@@ -65,7 +50,7 @@ impl Bus {
             DRAM_BASE..DRAM_END => Ok(self.dram[address - DRAM_BASE]),
             ROM_BASE..ROM_END => Ok(self.rom[address - ROM_BASE]),
             UART_BASE..UART_END => Ok(self.uart.read(address - UART_BASE)),
-            _ => Err(Exception::LoadAccessFault)
+            _ => Err(Exception::LoadAccessFault),
         }
     }
 
@@ -76,12 +61,12 @@ impl Bus {
 
                 for i in 0..NUM_HARTS {
                     if self.is_address_reserved(i, address) {
-                        self.invalidate_reserved_address(i);
+                        self.invalidate_reserved_address(i, address);
                     }
                 }
 
                 Ok(())
-            },
+            }
             UART_BASE..UART_END => {
                 self.uart.write(address - UART_BASE, val);
                 Ok(())
@@ -89,10 +74,9 @@ impl Bus {
 
             _ => Err(Exception::StoreAmoAccessFault),
         }
-
     }
 
-    pub fn read_word(&mut self, address: usize) -> Result<u32, Exception> {
+    pub fn read_aligned_word(&mut self, address: usize) -> Result<u32, Exception> {
         if address % 4 != 0 {
             return Err(Exception::LoadAddressMisaligned);
         }
@@ -105,35 +89,27 @@ impl Bus {
         Ok(u32::from_le_bytes([val_0, val_1, val_2, val_3]))
     }
 
-    pub fn write_word(&mut self, address: usize, word: u32) -> Result<(), Exception> {
+    pub fn write_aligned_word(&mut self, address: usize, word: u32) -> Result<(), Exception> {
         if address % 4 != 0 {
             return Err(Exception::StoreAmoAddressMisaligned);
         }
 
-        if address < DRAM_SIZE {
-            let bytes = word.to_le_bytes();
-            self.write_byte(address, bytes[0])?;
-            self.write_byte(address.wrapping_add(1), bytes[1])?;
-            self.write_byte(address.wrapping_add(2), bytes[2])?;
-            self.write_byte(address.wrapping_add(3), bytes[3])
-        } else {
-            Err(Exception::StoreAmoAccessFault)
-        }
+        let bytes = word.to_le_bytes();
+        self.write_byte(address, bytes[0])?;
+        self.write_byte(address.wrapping_add(1), bytes[1])?;
+        self.write_byte(address.wrapping_add(2), bytes[2])?;
+        self.write_byte(address.wrapping_add(3), bytes[3])
     }
 
     pub fn reserve_address(&mut self, hart_id: usize, address: usize) {
-        self.reserved_addresses[hart_id] = Some(address);
+        self.reserved_addresses[hart_id].insert(address);
     }
 
-    pub fn invalidate_reserved_address(&mut self, hart_id: usize) {
-        self.reserved_addresses[hart_id] = None;
+    pub fn invalidate_reserved_address(&mut self, hart_id: usize, address: usize) {
+        self.reserved_addresses[hart_id].remove(&address);
     }
 
     pub fn is_address_reserved(&self, hart_id: usize, address: usize) -> bool {
-        if let Some(v) = self.reserved_addresses[hart_id] {
-            v == address
-        } else {
-            false
-        }
+        self.reserved_addresses[hart_id].contains(&address)
     }
 }

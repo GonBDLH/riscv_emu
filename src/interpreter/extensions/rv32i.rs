@@ -1,13 +1,15 @@
 use crate::interpreter::{
     bus::Bus,
-    riscv_core::{BInstruction, Exception, IInstruction, JInstruction, RInstruction, RVCore, SInstruction, UInstruction},
+    riscv_core::{
+        BInstruction, Exception, IInstruction, JInstruction, RInstruction, RVCore, SInstruction,
+        UInstruction,
+    },
 };
 
 pub fn add(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let rs2_val = core.read_reg(instr.rs2);
 
-    // TODO !!!
     core.write_reg(instr.rd, rs1_val.wrapping_add(rs2_val));
     Ok(())
 }
@@ -169,17 +171,13 @@ pub fn lb(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exce
 
     let val = u32::from_le_bytes([mem_val, extend_val, extend_val, extend_val]);
     core.write_reg(instr.rd, val);
-    
+
     Ok(())
 }
 
 pub fn lh(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let addres = rs1_val.wrapping_add(instr.imm);
-
-    if addres % 2 != 0 {
-        return Err(Exception::LoadAddressMisaligned);
-    }
 
     let val_1 = bus.read_byte(addres as usize)?;
     let val_2 = bus.read_byte(addres.wrapping_add(1) as usize)?;
@@ -188,7 +186,7 @@ pub fn lh(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exce
 
     let val = u32::from_le_bytes([val_1, val_2, extend_val, extend_val]);
     core.write_reg(instr.rd, val);
-    
+
     Ok(())
 }
 
@@ -203,27 +201,23 @@ pub fn lw(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exce
 
     let val = u32::from_le_bytes([val_1, val_2, val_3, val_4]);
     core.write_reg(instr.rd, val);
-    
+
     Ok(())
 }
 
 pub fn lbu(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let addres = rs1_val.wrapping_add(instr.imm);
-    
+
     let val = bus.read_byte(addres as usize)? as u32;
     core.write_reg(instr.rd, val);
-    
+
     Ok(())
 }
 
 pub fn lhu(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let addres = rs1_val.wrapping_add(instr.imm);
-    
-    if addres % 2 != 0 {
-        return Err(Exception::LoadAddressMisaligned);
-    }
 
     let val_1 = bus.read_byte(addres as usize)?;
     let val_2 = bus.read_byte(addres.wrapping_add(1) as usize)?;
@@ -245,10 +239,6 @@ pub fn sh(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let rs1_val = core.read_reg(instr.rs1);
     let rs2_val = core.read_reg(instr.rs2);
     let addres = rs1_val.wrapping_add(instr.imm);
-    
-    if addres % 2 != 0 {
-        return Err(Exception::LoadAddressMisaligned);
-    }
 
     bus.write_byte(addres as usize, rs2_val as u8)?;
     bus.write_byte(addres.wrapping_add(1) as usize, (rs2_val >> 8) as u8)
@@ -270,9 +260,6 @@ pub fn beq(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs2_val = core.read_reg(instr.rs2);
     if rs1_val == rs2_val {
         let new_pc = core.pc.wrapping_add(instr.imm);
-        if new_pc % 4 != 0 {
-            return Err(Exception::InstructionAddressMisaligned);
-        }
 
         core.pc = new_pc.wrapping_sub(4);
     }
@@ -285,9 +272,6 @@ pub fn bne(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs2_val = core.read_reg(instr.rs2);
     if rs1_val != rs2_val {
         let new_pc = core.pc.wrapping_add(instr.imm);
-        if new_pc % 4 != 0 {
-            return Err(Exception::InstructionAddressMisaligned);
-        }
 
         core.pc = new_pc.wrapping_sub(4);
     }
@@ -300,9 +284,6 @@ pub fn blt(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs2_val = core.read_reg(instr.rs2);
     if (rs1_val as i32) < (rs2_val as i32) {
         let new_pc = core.pc.wrapping_add(instr.imm);
-        if new_pc % 4 != 0 {
-            return Err(Exception::InstructionAddressMisaligned);
-        }
 
         core.pc = new_pc.wrapping_sub(4);
     }
@@ -315,9 +296,6 @@ pub fn bge(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs2_val = core.read_reg(instr.rs2);
     if (rs1_val as i32) >= (rs2_val as i32) {
         let new_pc = core.pc.wrapping_add(instr.imm);
-        if new_pc % 4 != 0 {
-            return Err(Exception::InstructionAddressMisaligned);
-        }
 
         core.pc = new_pc.wrapping_sub(4);
     }
@@ -330,9 +308,6 @@ pub fn bltu(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs2_val = core.read_reg(instr.rs2);
     if rs1_val < rs2_val {
         let new_pc = core.pc.wrapping_add(instr.imm);
-        if new_pc % 4 != 0 {
-            return Err(Exception::InstructionAddressMisaligned);
-        }
 
         core.pc = new_pc.wrapping_sub(4);
     }
@@ -345,9 +320,6 @@ pub fn bgeu(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs2_val = core.read_reg(instr.rs2);
     if rs1_val >= rs2_val {
         let new_pc = core.pc.wrapping_add(instr.imm);
-        if new_pc % 4 != 0 {
-            return Err(Exception::InstructionAddressMisaligned);
-        }
 
         core.pc = new_pc.wrapping_sub(4);
     }
@@ -360,10 +332,10 @@ pub fn jal(instr: &JInstruction, core: &mut RVCore) -> Result<(), Exception> {
     if new_pc % 4 != 0 {
         return Err(Exception::InstructionAddressMisaligned);
     }
-     
+
     core.write_reg(instr.rd, core.pc.wrapping_add(4));
     core.pc = new_pc.wrapping_sub(4);
-    
+
     Ok(())
 }
 
@@ -373,7 +345,7 @@ pub fn jalr(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exce
     if new_pc % 4 != 0 {
         return Err(Exception::InstructionAddressMisaligned);
     }
-     
+
     core.write_reg(instr.rd, core.pc.wrapping_add(4));
     core.pc = new_pc.wrapping_sub(4);
 

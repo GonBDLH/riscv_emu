@@ -1,8 +1,8 @@
+use crate::interpreter::bus::Bus;
 use crate::interpreter::csr::ControlAndStatus;
 use crate::interpreter::csr::MCAUSE;
 use crate::interpreter::csr::MEDELEG;
 use crate::interpreter::csr::MEPC;
-use crate::interpreter::csr::MHARTID;
 use crate::interpreter::csr::MTVAL;
 use crate::interpreter::csr::MTVEC;
 use crate::interpreter::extensions::rv32a::*;
@@ -10,26 +10,30 @@ use crate::interpreter::extensions::rv32i::*;
 use crate::interpreter::extensions::rv32m::*;
 use crate::interpreter::extensions::rv32privileged::*;
 use crate::interpreter::extensions::rv32zicrs::*;
-use crate::interpreter::bus::Bus;
+use crate::interpreter::extensions::rv32zifencei::fence_i;
 
 pub struct RVCore {
     // x0/zero -> Siempre 0
-    registers: [u32; 31],
+    registers: [u32; 32],
     pub pc: u32,
 
     pub control_and_status: ControlAndStatus,
 
     pub privilege_level: PrivilegeLevel,
+
+    hart_id: u32,
 }
 
 impl Default for RVCore {
     fn default() -> Self {
         Self {
-            registers: [0u32; 31],
+            registers: [0u32; 32],
             pc: 0x80000000,
-            control_and_status: ControlAndStatus::new(),
+            control_and_status: ControlAndStatus::new(0),
 
             privilege_level: PrivilegeLevel::Machine,
+
+            hart_id: 0,
         }
     }
 }
@@ -59,28 +63,19 @@ impl RVCore {
     }
 
     pub fn read_reg(&self, reg: u32) -> u32 {
-        if reg == 0 {
-            0
-        } else if reg < 32 {
-            self.registers[reg as usize - 1]
+        if reg < 32 {
+            self.registers[reg as usize]
         } else {
             unreachable!("MAL REGISTRO")
         }
     }
 
     pub fn write_reg(&mut self, reg: u32, val: u32) {
-        if reg == 0 {
-        } else if reg < 32 {
-            self.registers[reg as usize - 1] = val;
-        } else {
+        if reg > 0 && reg < 32 {
+            self.registers[reg as usize] = val;
+        } else if reg >= 32 {
             unreachable!("MAL REGISTRO")
         }
-    }
-
-    pub fn read_hartid(&self) -> Result<usize, Exception> {
-        self.control_and_status
-            .read_csr(MHARTID, self.privilege_level)
-            .map(|x| x as usize)
     }
 
     fn try_decode_r_instr(&mut self, instr: u32) -> Option<RInstruction> {
@@ -370,20 +365,21 @@ impl RVCore {
         }
     }
 
-    fn try_decode_fence_instr(
-        &mut self,
-        instr: u32,
-    ) -> Option<IInstruction> {
+    fn try_decode_fence_instr(&mut self, instr: u32) -> Option<IInstruction> {
         let rd = (instr >> 7) & 0x1F;
         let funct3 = (instr >> 12) & 0x7;
         let rs1 = (instr >> 15) & 0x1F;
         let imm_val = get_i_imm_val(instr);
 
-        if funct3 == 0 {
-            Some(IInstruction::new(instr, rs1, imm_val, rd, fence))
-        } else {
-            None
+        match funct3 {
+            0b000 => Some(IInstruction::new(instr, rs1, imm_val, rd, fence)),
+            0b001 => Some(IInstruction::new(instr, rs1, imm_val, rd, fence_i)),
+            _ => None,
         }
+    }
+
+    pub fn get_hartid(&self) -> usize {
+        self.hart_id as usize
     }
 }
 
@@ -584,11 +580,7 @@ impl JInstruction {
         rd: u32,
         function: fn(&Self, &mut RVCore) -> Result<(), Exception>,
     ) -> Self {
-        Self {
-            imm,
-            rd,
-            function,
-        }
+        Self { imm, rd, function }
     }
 
     pub fn execute(&mut self, core: &mut RVCore) -> Result<(), Exception> {
@@ -633,7 +625,7 @@ impl AtomicInstruction {
         rs1: u32,
         rs2: u32,
         rd: u32,
-        
+
         function: fn(&Self, &mut Bus, &mut RVCore) -> Result<(), Exception>,
     ) -> Self {
         Self {
@@ -716,7 +708,7 @@ impl Exception {
 
     pub fn trap(&self, core: &mut RVCore) -> Trap {
         let prev_priv_level = core.privilege_level;
-        let medeleg = core.control_and_status.read_csr_unchecked(MEDELEG);
+        let _medeleg = core.control_and_status.read_csr_unchecked(MEDELEG);
         let cause = self.get_cause();
 
         // if prev_priv_level as u32 <= PrivilegeLevel::Supervisor as u32 && ((medeleg >> cause) & 1) > 0 {

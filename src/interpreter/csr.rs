@@ -57,9 +57,9 @@ pub struct ControlAndStatus {
 }
 
 impl ControlAndStatus {
-    pub fn new() -> Self {
+    pub fn new(hart_id: u32) -> Self {
         let mut csrs = [0u32; 4096];
-        
+
         let mut misa = 0u32;
         misa |= 0b01 << 30; // 32 bits
         misa |= 1 << 18; // Supervisor ISA
@@ -72,10 +72,9 @@ impl ControlAndStatus {
         let mut mstatus = MStatus(0);
         mstatus.set_mpp(0b11);
 
-        Self { 
-            csrs,
-            mstatus
-        }
+        csrs[MHARTID] = hart_id;
+
+        Self { csrs, mstatus }
     }
 
     pub fn read_csr(&self, csr: usize, priv_level: PrivilegeLevel) -> Result<u32, Exception> {
@@ -92,6 +91,7 @@ impl ControlAndStatus {
             MSTATUSH => self.csrs[MSTATUSH] & MSTATUSH_MASK,
             MIP => self.csrs[MIP] & MIP_MASK,
             MIE => self.csrs[MIE] & MIE_MASK,
+            MHARTID => self.read_hartid(),
 
             SSTATUS => self.csrs[MSTATUS] & SSTATUS_MASK,
             SIP => self.csrs[MIP] & SIP_MASK,
@@ -117,7 +117,12 @@ impl ControlAndStatus {
         }
     }
 
-    pub fn write_csr(&mut self, csr: usize, priv_level: PrivilegeLevel, val: u32) -> Result<(), Exception> {
+    pub fn write_csr(
+        &mut self,
+        csr: usize,
+        priv_level: PrivilegeLevel,
+        val: u32,
+    ) -> Result<(), Exception> {
         let csr_rw = (csr >> 10) & 0b11;
         let csr_priv = (csr >> 8) & 0b11;
 
@@ -133,7 +138,7 @@ impl ControlAndStatus {
 
         match csr {
             MSTATUS => self.mstatus.0 = val,
-            _ => self.csrs[csr] = val
+            _ => self.csrs[csr] = val,
         }
 
         Ok(())
@@ -142,13 +147,13 @@ impl ControlAndStatus {
     pub fn write_csr_unchecked(&mut self, csr: usize, val: u32) {
         match csr {
             MSTATUS => self.mstatus.0 = val,
-            _ => self.csrs[csr] = val
+            _ => self.csrs[csr] = val,
         }
     }
 
     pub fn get_mstatus_ref(&self, priv_level: PrivilegeLevel) -> Result<&MStatus, Exception> {
         let csr_priv = (MSTATUS >> 8) & 0b11;
-        
+
         if csr_priv > priv_level as usize {
             // BAD PRIVILEGE LEVEL, RAISE EXCEPTION
             return Err(Exception::IllegalInstruction(0));
@@ -157,9 +162,12 @@ impl ControlAndStatus {
         Ok(&self.mstatus)
     }
 
-    pub fn get_mstatus_mut_ref(&mut self, priv_level: PrivilegeLevel) -> Result<&mut MStatus, Exception> {
+    pub fn get_mstatus_mut_ref(
+        &mut self,
+        priv_level: PrivilegeLevel,
+    ) -> Result<&mut MStatus, Exception> {
         let csr_priv = (MSTATUS >> 8) & 0b11;
-        
+
         if csr_priv > priv_level as usize {
             // BAD PRIVILEGE LEVEL, RAISE EXCEPTION
             return Err(Exception::IllegalInstruction(0));
@@ -167,9 +175,13 @@ impl ControlAndStatus {
 
         Ok(&mut self.mstatus)
     }
+
+    pub fn read_hartid(&self) -> u32 {
+        self.csrs[MHARTID]
+    }
 }
 
-bitfield!{
+bitfield! {
     pub struct MStatus(u32);
     _, _: 0; // WPRI 0
     pub get_sie, set_sie: 1;

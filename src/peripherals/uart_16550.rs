@@ -1,10 +1,18 @@
-use std::{collections::VecDeque, io::{stdin, Read}, sync::{atomic::AtomicBool, mpsc::{channel, Receiver}, Arc, Condvar, Mutex}, thread};
+use std::{
+    collections::VecDeque,
+    io::{Read, stdin},
+    sync::{
+        Arc, Condvar, Mutex,
+        atomic::AtomicBool,
+        mpsc::{Receiver, channel},
+    },
+    thread,
+};
 
 pub struct Uart16550 {
     rx_tx_reg: Arc<(Mutex<u8>, Condvar)>,
 
     interrupt: Arc<AtomicBool>,
-
 }
 
 impl Uart16550 {
@@ -14,18 +22,20 @@ impl Uart16550 {
 
         let interrupt = Arc::new(AtomicBool::new(false));
 
-        let _stdin_read_thread = thread::spawn(move || loop {
-            let mut buf = [0u8];
-            
-            if stdin().read_exact(&mut buf).is_ok() {
-                let (lock, cvar) = &*rx_tx_reg_thread;
-                let mut rx = lock.lock().expect("MUTEX ENVENENDADO");
+        let _stdin_read_thread = thread::spawn(move || {
+            loop {
+                let mut buf = [0u8];
+
+                if stdin().read_exact(&mut buf).is_ok() {
+                    let (lock, cvar) = &*rx_tx_reg_thread;
+                    let mut rx = lock.lock().expect("MUTEX ENVENENDADO");
+                }
             }
         });
-        
+
         Self {
             rx_tx_reg,
-            interrupt
+            interrupt,
         }
     }
 

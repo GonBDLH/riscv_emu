@@ -61,7 +61,7 @@ pub fn divu(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
     } else {
         u32::MAX
     };
-    
+
     core.write_reg(instr.rd, val);
     Ok(())
 }
@@ -70,12 +70,14 @@ pub fn rem(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1) as i32;
     let rs2_val = core.read_reg(instr.rs2) as i32;
 
-    let val = if rs2_val != 0 {
-        rs1_val % rs2_val
-    } else {
+    let val = if rs1_val == i32::MIN && rs2_val == -1 {
+        0
+    } else if rs2_val == 0 {
         rs1_val
+    } else {
+        rs1_val % rs2_val
     };
-    
+
     core.write_reg(instr.rd, val as u32);
     Ok(())
 }
@@ -89,7 +91,7 @@ pub fn remu(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
     } else {
         rs1_val
     };
-    
+
     core.write_reg(instr.rd, val);
     Ok(())
 }

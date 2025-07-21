@@ -1,5 +1,7 @@
-use crate::interpreter::{bus::Bus, riscv_core::{Exception, IInstruction, PrivilegeLevel, RVCore}};
-
+use crate::interpreter::{
+    bus::Bus,
+    riscv_core::{Exception, IInstruction, PrivilegeLevel, RVCore},
+};
 
 pub fn ecall(_: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
     match core.privilege_level {
@@ -14,7 +16,9 @@ pub fn ebreak(_: &IInstruction, _: &Bus, _: &mut RVCore) -> Result<(), Exception
 }
 
 pub fn mret(_: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
-    let mstatus = core.control_and_status.get_mstatus_mut_ref(core.privilege_level)?;
+    let mstatus = core
+        .control_and_status
+        .get_mstatus_mut_ref(core.privilege_level)?;
 
     let mpp = mstatus.get_mpp();
     let mpie = mstatus.get_mpie();
