@@ -39,7 +39,7 @@ use crate::interpreter::Interpreter;
 #[test]
 fn {test_name}() {{
     let mut interpreter = Interpreter::new();
-    interpreter.load_test("rv_tests/{name}");
+    interpreter.load_hex("rv_tests/{name}");
     interpreter.run();
     assert_eq!(interpreter.read_test_result({to_host:#010X}), 1);
 }}

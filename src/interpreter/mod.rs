@@ -29,7 +29,7 @@ impl Interpreter {
         }
     }
 
-    pub fn load_test(&mut self, path: &str) {
+    pub fn load_hex(&mut self, path: &str) {
         let mut file = File::open(path).unwrap();
         let mut buf = String::new();
 
