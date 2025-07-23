@@ -1,8 +1,170 @@
 
 use crate::interpreter::Interpreter;
+use ntest::timeout;
 
 
 #[test]
+#[timeout(2000)]
+fn rv32mi_p_breakpoint() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-breakpoint.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_csr() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-csr.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_illegal() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-illegal.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_instret_overflow() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-instret_overflow.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_lh_misaligned() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-lh-misaligned.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_lw_misaligned() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-lw-misaligned.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_ma_addr() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-ma_addr.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_ma_fetch() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-ma_fetch.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_mcsr() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-mcsr.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_pmpaddr() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-pmpaddr.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_sbreak() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-sbreak.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_scall() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-scall.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_sh_misaligned() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-sh-misaligned.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_shamt() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-shamt.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_sw_misaligned() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-sw-misaligned.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
+fn rv32mi_p_zicntr() {
+    let mut interpreter = Interpreter::new();
+    interpreter.load_hex("rv_tests/rv32mi-p-zicntr.hex");
+    interpreter.run();
+    assert_eq!(interpreter.read_test_result(0x80001000), 1);
+}
+
+
+#[test]
+#[timeout(2000)]
 fn rv32ua_p_amoadd_w() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ua-p-amoadd_w.hex");
@@ -12,6 +174,7 @@ fn rv32ua_p_amoadd_w() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ua_p_amoand_w() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ua-p-amoand_w.hex");
@@ -21,6 +184,7 @@ fn rv32ua_p_amoand_w() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ua_p_amomaxu_w() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ua-p-amomaxu_w.hex");
@@ -30,6 +194,7 @@ fn rv32ua_p_amomaxu_w() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ua_p_amomax_w() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ua-p-amomax_w.hex");
@@ -39,6 +204,7 @@ fn rv32ua_p_amomax_w() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ua_p_amominu_w() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ua-p-amominu_w.hex");
@@ -48,6 +214,7 @@ fn rv32ua_p_amominu_w() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ua_p_amomin_w() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ua-p-amomin_w.hex");
@@ -57,6 +224,7 @@ fn rv32ua_p_amomin_w() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ua_p_amoor_w() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ua-p-amoor_w.hex");
@@ -66,6 +234,7 @@ fn rv32ua_p_amoor_w() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ua_p_amoswap_w() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ua-p-amoswap_w.hex");
@@ -75,6 +244,7 @@ fn rv32ua_p_amoswap_w() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ua_p_amoxor_w() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ua-p-amoxor_w.hex");
@@ -84,6 +254,7 @@ fn rv32ua_p_amoxor_w() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ua_p_lrsc() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ua-p-lrsc.hex");
@@ -93,6 +264,7 @@ fn rv32ua_p_lrsc() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_add() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-add.hex");
@@ -102,6 +274,7 @@ fn rv32ui_p_add() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_addi() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-addi.hex");
@@ -111,6 +284,7 @@ fn rv32ui_p_addi() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_and() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-and.hex");
@@ -120,6 +294,7 @@ fn rv32ui_p_and() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_andi() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-andi.hex");
@@ -129,6 +304,7 @@ fn rv32ui_p_andi() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_auipc() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-auipc.hex");
@@ -138,6 +314,7 @@ fn rv32ui_p_auipc() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_beq() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-beq.hex");
@@ -147,6 +324,7 @@ fn rv32ui_p_beq() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_bge() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-bge.hex");
@@ -156,6 +334,7 @@ fn rv32ui_p_bge() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_bgeu() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-bgeu.hex");
@@ -165,6 +344,7 @@ fn rv32ui_p_bgeu() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_blt() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-blt.hex");
@@ -174,6 +354,7 @@ fn rv32ui_p_blt() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_bltu() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-bltu.hex");
@@ -183,6 +364,7 @@ fn rv32ui_p_bltu() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_bne() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-bne.hex");
@@ -192,6 +374,7 @@ fn rv32ui_p_bne() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_fence_i() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-fence_i.hex");
@@ -201,6 +384,7 @@ fn rv32ui_p_fence_i() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_jal() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-jal.hex");
@@ -210,6 +394,7 @@ fn rv32ui_p_jal() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_jalr() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-jalr.hex");
@@ -219,6 +404,7 @@ fn rv32ui_p_jalr() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_lb() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-lb.hex");
@@ -228,6 +414,7 @@ fn rv32ui_p_lb() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_lbu() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-lbu.hex");
@@ -237,6 +424,7 @@ fn rv32ui_p_lbu() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_ld_st() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-ld_st.hex");
@@ -246,6 +434,7 @@ fn rv32ui_p_ld_st() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_lh() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-lh.hex");
@@ -255,6 +444,7 @@ fn rv32ui_p_lh() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_lhu() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-lhu.hex");
@@ -264,6 +454,7 @@ fn rv32ui_p_lhu() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_lui() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-lui.hex");
@@ -273,6 +464,7 @@ fn rv32ui_p_lui() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_lw() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-lw.hex");
@@ -282,6 +474,7 @@ fn rv32ui_p_lw() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_ma_data() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-ma_data.hex");
@@ -291,6 +484,7 @@ fn rv32ui_p_ma_data() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_or() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-or.hex");
@@ -300,6 +494,7 @@ fn rv32ui_p_or() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_ori() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-ori.hex");
@@ -309,6 +504,7 @@ fn rv32ui_p_ori() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_sb() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-sb.hex");
@@ -318,6 +514,7 @@ fn rv32ui_p_sb() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_sh() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-sh.hex");
@@ -327,6 +524,7 @@ fn rv32ui_p_sh() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_simple() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-simple.hex");
@@ -336,6 +534,7 @@ fn rv32ui_p_simple() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_sll() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-sll.hex");
@@ -345,6 +544,7 @@ fn rv32ui_p_sll() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_slli() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-slli.hex");
@@ -354,6 +554,7 @@ fn rv32ui_p_slli() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_slt() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-slt.hex");
@@ -363,6 +564,7 @@ fn rv32ui_p_slt() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_slti() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-slti.hex");
@@ -372,6 +574,7 @@ fn rv32ui_p_slti() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_sltiu() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-sltiu.hex");
@@ -381,6 +584,7 @@ fn rv32ui_p_sltiu() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_sltu() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-sltu.hex");
@@ -390,6 +594,7 @@ fn rv32ui_p_sltu() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_sra() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-sra.hex");
@@ -399,6 +604,7 @@ fn rv32ui_p_sra() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_srai() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-srai.hex");
@@ -408,6 +614,7 @@ fn rv32ui_p_srai() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_srl() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-srl.hex");
@@ -417,6 +624,7 @@ fn rv32ui_p_srl() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_srli() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-srli.hex");
@@ -426,6 +634,7 @@ fn rv32ui_p_srli() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_st_ld() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-st_ld.hex");
@@ -435,6 +644,7 @@ fn rv32ui_p_st_ld() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_sub() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-sub.hex");
@@ -444,6 +654,7 @@ fn rv32ui_p_sub() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_sw() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-sw.hex");
@@ -453,6 +664,7 @@ fn rv32ui_p_sw() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_xor() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-xor.hex");
@@ -462,6 +674,7 @@ fn rv32ui_p_xor() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32ui_p_xori() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32ui-p-xori.hex");
@@ -471,6 +684,7 @@ fn rv32ui_p_xori() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32um_p_div() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32um-p-div.hex");
@@ -480,6 +694,7 @@ fn rv32um_p_div() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32um_p_divu() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32um-p-divu.hex");
@@ -489,6 +704,7 @@ fn rv32um_p_divu() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32um_p_mul() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32um-p-mul.hex");
@@ -498,6 +714,7 @@ fn rv32um_p_mul() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32um_p_mulh() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32um-p-mulh.hex");
@@ -507,6 +724,7 @@ fn rv32um_p_mulh() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32um_p_mulhsu() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32um-p-mulhsu.hex");
@@ -516,6 +734,7 @@ fn rv32um_p_mulhsu() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32um_p_mulhu() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32um-p-mulhu.hex");
@@ -525,6 +744,7 @@ fn rv32um_p_mulhu() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32um_p_rem() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32um-p-rem.hex");
@@ -534,6 +754,7 @@ fn rv32um_p_rem() {
 
 
 #[test]
+#[timeout(2000)]
 fn rv32um_p_remu() {
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/rv32um-p-remu.hex");

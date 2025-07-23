@@ -706,10 +706,19 @@ impl Exception {
         }
     }
 
+    fn get_val(&self) -> Option<u32> {
+        match self {
+            Self::IllegalInstruction(val) => Some(*val),
+            // TODO
+            _ => None,
+        }
+    }
+
     pub fn trap(&self, core: &mut RVCore) -> Trap {
         let prev_priv_level = core.privilege_level;
         let _medeleg = core.control_and_status.read_csr_unchecked(MEDELEG);
         let cause = self.get_cause();
+        let tval = self.get_val();
 
         // if prev_priv_level as u32 <= PrivilegeLevel::Supervisor as u32 && ((medeleg >> cause) & 1) > 0 {
         //     todo!()
@@ -718,7 +727,9 @@ impl Exception {
 
         core.control_and_status.write_csr_unchecked(MEPC, core.pc);
         core.control_and_status.write_csr_unchecked(MCAUSE, cause);
-        core.control_and_status.write_csr_unchecked(MTVAL, 0); // TODO
+        if let Some(val) = tval {
+            core.control_and_status.write_csr_unchecked(MTVAL, val);
+        }
 
         let mstatus = core
             .control_and_status

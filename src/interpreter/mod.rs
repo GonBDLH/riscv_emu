@@ -66,11 +66,9 @@ impl Interpreter {
     #[cfg(test)]
     pub fn run(&mut self) {
         loop {
-            let instr_bytes = self.fetch();
-
             let mut exception = None;
 
-            if self.core.pc == 0x80000f8c {
+            if self.core.pc == 0x800001e8 {
                 println!("DEBUG");
             }
 
@@ -78,6 +76,7 @@ impl Interpreter {
                 break;
             }
 
+            let instr_bytes = self.fetch();
             match instr_bytes {
                 Ok(fetched) => {
                     let instr = self.decode(fetched);
@@ -87,6 +86,7 @@ impl Interpreter {
                             .execute(&mut self.bus, &mut self.core)
                             .map_err(|execution_exception| exception = Some(execution_exception));
                         if result.is_ok() {
+                            self.core.control_and_status.increment_minstret();
                             self.core.pc = self.core.pc.wrapping_add(4);
                         }
                     } else {
@@ -117,10 +117,9 @@ impl Interpreter {
     #[cfg(not(test))]
     pub fn run(&mut self) {
         loop {
-            let instr_bytes = self.fetch();
-
             let mut exception = None;
 
+            let instr_bytes = self.fetch();
             match instr_bytes {
                 Ok(fetched) => {
                     let instr = self.decode(fetched);
@@ -130,6 +129,7 @@ impl Interpreter {
                             .execute(&mut self.bus, &mut self.core)
                             .map_err(|execution_exception| exception = Some(execution_exception));
                         if result.is_ok() {
+                            self.core.control_and_status.increment_minstret();
                             self.core.pc = self.core.pc.wrapping_add(4);
                         }
                     } else {

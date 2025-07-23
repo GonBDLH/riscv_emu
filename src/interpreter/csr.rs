@@ -39,6 +39,9 @@ const MCYCLEH: usize = 0xB80;
 const MINSTRETH: usize = 0xB82;
 const MHPCOUNTERH3: usize = 0xB83; // MAX 31 (-3)
 
+// DEBUG
+const TSELECT: usize = 0x7A0;
+
 /*
  * SUPERVISOR
  */
@@ -54,6 +57,8 @@ const SCOUNTEREN: usize = 0x106;
 pub struct ControlAndStatus {
     csrs: [u32; 4096],
     mstatus: MStatus,
+
+    minstret_loaded: bool
 }
 
 impl ControlAndStatus {
@@ -74,7 +79,7 @@ impl ControlAndStatus {
 
         csrs[MHARTID] = hart_id;
 
-        Self { csrs, mstatus }
+        Self { csrs, mstatus, minstret_loaded: false }
     }
 
     pub fn read_csr(&self, csr: usize, priv_level: PrivilegeLevel) -> Result<u32, Exception> {
@@ -92,6 +97,7 @@ impl ControlAndStatus {
             MIP => self.csrs[MIP] & MIP_MASK,
             MIE => self.csrs[MIE] & MIE_MASK,
             MHARTID => self.read_hartid(),
+            TSELECT => u32::MAX,    // TODO Cambiar si se incluye el modo debug
 
             SSTATUS => self.csrs[MSTATUS] & SSTATUS_MASK,
             SIP => self.csrs[MIP] & SIP_MASK,
@@ -138,6 +144,11 @@ impl ControlAndStatus {
 
         match csr {
             MSTATUS => self.mstatus.0 = val,
+            MINSTRET | MINSTRETH => {
+                self.minstret_loaded = true;
+                self.csrs[csr] = val;
+            },
+            MEPC => self.csrs[MEPC] = val & 0xFFFFFFFC,
             _ => self.csrs[csr] = val,
         }
 
@@ -178,6 +189,22 @@ impl ControlAndStatus {
 
     pub fn read_hartid(&self) -> u32 {
         self.csrs[MHARTID]
+    }
+
+    pub fn increment_minstret(&mut self) {
+        if self.minstret_loaded {
+            self.minstret_loaded = false;
+            return; 
+        }
+
+        let minstret = self.csrs[MINSTRET];
+        let minstreth = self.csrs[MINSTRETH];
+        
+        let minsret_64 = (minstret as u64) + ((minstreth as u64) << 32);
+        let new_minstret = minsret_64.wrapping_add(1);
+
+        self.csrs[MINSTRET] = new_minstret as u32;
+        self.csrs[MINSTRETH] = (new_minstret >> 32) as u32;
     }
 }
 

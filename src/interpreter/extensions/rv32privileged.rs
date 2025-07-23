@@ -1,6 +1,5 @@
 use crate::interpreter::{
-    bus::Bus,
-    riscv_core::{Exception, IInstruction, PrivilegeLevel, RVCore},
+    bus::Bus, csr::MEPC, riscv_core::{Exception, IInstruction, PrivilegeLevel, RVCore}
 };
 
 pub fn ecall(_: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
@@ -16,6 +15,8 @@ pub fn ebreak(_: &IInstruction, _: &Bus, _: &mut RVCore) -> Result<(), Exception
 }
 
 pub fn mret(_: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+    core.pc = core.control_and_status.read_csr(MEPC, core.privilege_level)?.wrapping_sub(4);
+
     let mstatus = core
         .control_and_status
         .get_mstatus_mut_ref(core.privilege_level)?;
@@ -32,6 +33,7 @@ pub fn mret(_: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exceptio
     if mpp_y != PrivilegeLevel::Machine {
         mstatus.set_mprv(false);
     }
+
 
     Ok(())
 }

@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 bitfield = "0.19.1"
 ihex = "3.0.0"
+ntest = "0.9.3"

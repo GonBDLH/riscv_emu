@@ -12,6 +12,7 @@ fn main() {
         file,
         r#"
 use crate::interpreter::Interpreter;
+use ntest::timeout;
 "#
     )
     .unwrap();
@@ -37,6 +38,7 @@ use crate::interpreter::Interpreter;
                     file,
                     r#"
 #[test]
+#[timeout(2000)]
 fn {test_name}() {{
     let mut interpreter = Interpreter::new();
     interpreter.load_hex("rv_tests/{name}");
