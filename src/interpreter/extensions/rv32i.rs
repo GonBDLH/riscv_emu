@@ -261,6 +261,10 @@ pub fn beq(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     if rs1_val == rs2_val {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
+        if new_pc % 4 != 0 {
+            return Err(Exception::InstructionAddressMisaligned);
+        }
+
         core.pc = new_pc.wrapping_sub(4);
     }
 
@@ -272,6 +276,10 @@ pub fn bne(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs2_val = core.read_reg(instr.rs2);
     if rs1_val != rs2_val {
         let new_pc = core.pc.wrapping_add(instr.imm);
+
+        if new_pc % 4 != 0 {
+            return Err(Exception::InstructionAddressMisaligned);
+        }
 
         core.pc = new_pc.wrapping_sub(4);
     }
@@ -285,6 +293,10 @@ pub fn blt(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     if (rs1_val as i32) < (rs2_val as i32) {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
+        if new_pc % 4 != 0 {
+            return Err(Exception::InstructionAddressMisaligned);
+        }
+
         core.pc = new_pc.wrapping_sub(4);
     }
 
@@ -296,6 +308,10 @@ pub fn bge(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs2_val = core.read_reg(instr.rs2);
     if (rs1_val as i32) >= (rs2_val as i32) {
         let new_pc = core.pc.wrapping_add(instr.imm);
+
+        if new_pc % 4 != 0 {
+            return Err(Exception::InstructionAddressMisaligned);
+        }
 
         core.pc = new_pc.wrapping_sub(4);
     }
@@ -309,6 +325,10 @@ pub fn bltu(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     if rs1_val < rs2_val {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
+        if new_pc % 4 != 0 {
+            return Err(Exception::InstructionAddressMisaligned);
+        }
+
         core.pc = new_pc.wrapping_sub(4);
     }
 
@@ -320,6 +340,10 @@ pub fn bgeu(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs2_val = core.read_reg(instr.rs2);
     if rs1_val >= rs2_val {
         let new_pc = core.pc.wrapping_add(instr.imm);
+
+        if new_pc % 4 != 0 {
+            return Err(Exception::InstructionAddressMisaligned);
+        }
 
         core.pc = new_pc.wrapping_sub(4);
     }
