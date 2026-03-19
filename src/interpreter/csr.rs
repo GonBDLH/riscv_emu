@@ -54,9 +54,12 @@ const SIP_MASK: u32 = 0xFFFF2222;
 const STVEC: usize = 0x105;
 const SCOUNTEREN: usize = 0x106;
 
+pub const SATP: usize = 0x180;
+
 pub struct ControlAndStatus {
     csrs: [u32; 4096],
     mstatus: MStatus,
+    satp: Satp32,
 
     minstret_loaded: bool
 }
@@ -79,7 +82,9 @@ impl ControlAndStatus {
 
         csrs[MHARTID] = hart_id;
 
-        Self { csrs, mstatus, minstret_loaded: false }
+        let satp = Satp32(0);
+
+        Self { csrs, mstatus, satp, minstret_loaded: false }
     }
 
     pub fn read_csr(&self, csr: usize, priv_level: PrivilegeLevel) -> Result<u32, Exception> {
@@ -91,19 +96,7 @@ impl ControlAndStatus {
         }
 
         // let val = self.csrs[csr as usize];
-        let val = match csr {
-            MSTATUS => self.mstatus.0,
-            MSTATUSH => self.csrs[MSTATUSH] & MSTATUSH_MASK,
-            MIP => self.csrs[MIP] & MIP_MASK,
-            MIE => self.csrs[MIE] & MIE_MASK,
-            MHARTID => self.read_hartid(),
-            TSELECT => u32::MAX,    // TODO Cambiar si se incluye el modo debug
-
-            SSTATUS => self.csrs[MSTATUS] & SSTATUS_MASK,
-            SIP => self.csrs[MIP] & SIP_MASK,
-            SIE => self.csrs[MIE] & SIE_MASK,
-            _ => self.csrs[csr],
-        };
+        let val = self.read_csr_unchecked(csr);
 
         Ok(val)
     }
@@ -115,10 +108,13 @@ impl ControlAndStatus {
             MSTATUSH => self.csrs[MSTATUSH] & MSTATUSH_MASK,
             MIP => self.csrs[MIP] & MIP_MASK,
             MIE => self.csrs[MIE] & MIE_MASK,
+            MHARTID => self.read_hartid(),
+            TSELECT => u32::MAX,    // TODO Cambiar si se incluye el modo debug
 
             SSTATUS => self.csrs[MSTATUS] & SSTATUS_MASK,
             SIP => self.csrs[MIP] & SIP_MASK,
             SIE => self.csrs[MIE] & SIE_MASK,
+            SATP => self.satp.0,
             _ => self.csrs[csr],
         }
     }
@@ -173,6 +169,10 @@ impl ControlAndStatus {
         Ok(&self.mstatus)
     }
 
+    pub fn get_mstatus_ref_unchecked(&self) -> &MStatus {
+        &self.mstatus
+    }
+
     pub fn get_mstatus_mut_ref(
         &mut self,
         priv_level: PrivilegeLevel,
@@ -185,6 +185,11 @@ impl ControlAndStatus {
         }
 
         Ok(&mut self.mstatus)
+    }
+
+    // USAR SOLO EN METODO TRANSLATE PARA OBTENER DIRECCIONES FISICAS
+    pub fn get_satp_ref_unchecked(&self) -> &Satp32 {
+        &self.satp
     }
 
     pub fn read_hartid(&self) -> u32 {
@@ -233,4 +238,12 @@ bitfield! {
     pub get_sdt, set_sdt: 24;
     _, _: 30, 25; // WPRI 25-30
     pub get_sd, set_sd: 31;
+}
+
+bitfield! {
+    pub struct Satp32(u32);
+    u32;
+    pub get_ppn, set_ppn: 0,21;
+    pub get_asid, set_asid: 22, 30;
+    pub get_mode, set_mode: 31
 }

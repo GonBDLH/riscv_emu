@@ -10,7 +10,7 @@ use crate::interpreter::{
 mod bus;
 mod csr;
 mod extensions;
-mod mmu;
+mod virtual_memory;
 mod riscv_core;
 
 const NUM_HARTS: usize = 1;

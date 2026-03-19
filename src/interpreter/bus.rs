@@ -76,11 +76,20 @@ impl Bus {
         }
     }
 
-    pub fn read_aligned_word(&mut self, address: usize) -> Result<u32, Exception> {
+    pub fn read_aligned_word(&self, address: usize) -> Result<u32, Exception> {
         if address % 4 != 0 {
             return Err(Exception::LoadAddressMisaligned);
         }
 
+        let val_0 = self.read_byte(address)?;
+        let val_1 = self.read_byte(address.wrapping_add(1))?;
+        let val_2 = self.read_byte(address.wrapping_add(2))?;
+        let val_3 = self.read_byte(address.wrapping_add(3))?;
+
+        Ok(u32::from_le_bytes([val_0, val_1, val_2, val_3]))
+    }
+
+    pub fn read_word(&self, address: usize) -> Result<u32, Exception> {
         let val_0 = self.read_byte(address)?;
         let val_1 = self.read_byte(address.wrapping_add(1))?;
         let val_2 = self.read_byte(address.wrapping_add(2))?;
