@@ -1,1 +1,1 @@
-mod sv32;
+pub mod sv32;

@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    interpreter::{NUM_HARTS, riscv_core::Exception},
+    interpreter::{NUM_HARTS, riscv_core::Exception, virtual_memory::sv32::PhysicalAddress},
     peripherals::uart_16550::Uart16550,
 };
 
@@ -45,7 +45,9 @@ impl Default for Bus {
 }
 
 impl Bus {
-    pub fn read_byte(&self, address: usize) -> Result<u8, Exception> {
+    pub fn read_byte(&self, phys_address: &PhysicalAddress) -> Result<u8, Exception> {
+        let address = phys_address.0 as usize;
+
         match address {
             DRAM_BASE..DRAM_END => Ok(self.dram[address - DRAM_BASE]),
             ROM_BASE..ROM_END => Ok(self.rom[address - ROM_BASE]),
@@ -54,7 +56,9 @@ impl Bus {
         }
     }
 
-    pub fn write_byte(&mut self, address: usize, val: u8) -> Result<(), Exception> {
+    pub fn write_byte(&mut self, phys_address: &PhysicalAddress, val: u8) -> Result<(), Exception> {
+        let address = phys_address.0 as usize;
+
         match address {
             DRAM_BASE..DRAM_END => {
                 self.dram[address - DRAM_BASE] = val;
@@ -76,38 +80,38 @@ impl Bus {
         }
     }
 
-    pub fn read_aligned_word(&self, address: usize) -> Result<u32, Exception> {
-        if address % 4 != 0 {
+    pub fn read_aligned_word(&self, phys_address: &PhysicalAddress) -> Result<u32, Exception> {
+        if phys_address.0 % 4 != 0 {
             return Err(Exception::LoadAddressMisaligned);
         }
 
-        let val_0 = self.read_byte(address)?;
-        let val_1 = self.read_byte(address.wrapping_add(1))?;
-        let val_2 = self.read_byte(address.wrapping_add(2))?;
-        let val_3 = self.read_byte(address.wrapping_add(3))?;
+        let val_0 = self.read_byte(phys_address)?;
+        let val_1 = self.read_byte(&phys_address.wrapping_add(1))?;
+        let val_2 = self.read_byte(&phys_address.wrapping_add(2))?;
+        let val_3 = self.read_byte(&phys_address.wrapping_add(3))?;
 
         Ok(u32::from_le_bytes([val_0, val_1, val_2, val_3]))
     }
 
-    pub fn read_word(&self, address: usize) -> Result<u32, Exception> {
-        let val_0 = self.read_byte(address)?;
-        let val_1 = self.read_byte(address.wrapping_add(1))?;
-        let val_2 = self.read_byte(address.wrapping_add(2))?;
-        let val_3 = self.read_byte(address.wrapping_add(3))?;
+    pub fn read_word(&self, phys_address: &PhysicalAddress) -> Result<u32, Exception> {
+        let val_0 = self.read_byte(phys_address)?;
+        let val_1 = self.read_byte(&phys_address.wrapping_add(1))?;
+        let val_2 = self.read_byte(&phys_address.wrapping_add(2))?;
+        let val_3 = self.read_byte(&phys_address.wrapping_add(3))?;
 
         Ok(u32::from_le_bytes([val_0, val_1, val_2, val_3]))
     }
 
-    pub fn write_aligned_word(&mut self, address: usize, word: u32) -> Result<(), Exception> {
-        if address % 4 != 0 {
+    pub fn write_aligned_word(&mut self, phys_address: &PhysicalAddress, word: u32) -> Result<(), Exception> {
+        if phys_address.0 % 4 != 0 {
             return Err(Exception::StoreAmoAddressMisaligned);
         }
 
         let bytes = word.to_le_bytes();
-        self.write_byte(address, bytes[0])?;
-        self.write_byte(address.wrapping_add(1), bytes[1])?;
-        self.write_byte(address.wrapping_add(2), bytes[2])?;
-        self.write_byte(address.wrapping_add(3), bytes[3])
+        self.write_byte(phys_address, bytes[0])?;
+        self.write_byte(&phys_address.wrapping_add(1), bytes[1])?;
+        self.write_byte(&phys_address.wrapping_add(2), bytes[2])?;
+        self.write_byte(&phys_address.wrapping_add(3), bytes[3])
     }
 
     pub fn reserve_address(&mut self, hart_id: usize, address: usize) {

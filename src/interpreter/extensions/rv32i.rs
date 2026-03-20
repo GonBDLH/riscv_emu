@@ -3,7 +3,7 @@ use crate::interpreter::{
     riscv_core::{
         BInstruction, Exception, IInstruction, JInstruction, RInstruction, RVCore, SInstruction,
         UInstruction,
-    },
+    }, virtual_memory::sv32::{AccessType, translate_address},
 };
 
 pub fn add(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
@@ -93,49 +93,49 @@ pub fn sltu(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
     Ok(())
 }
 
-pub fn addi(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn addi(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
 
     core.write_reg(instr.rd, rs1_val.wrapping_add(instr.imm));
     Ok(())
 }
 
-pub fn xori(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn xori(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
 
     core.write_reg(instr.rd, rs1_val ^ instr.imm);
     Ok(())
 }
 
-pub fn ori(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn ori(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
 
     core.write_reg(instr.rd, rs1_val | instr.imm);
     Ok(())
 }
 
-pub fn andi(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn andi(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
 
     core.write_reg(instr.rd, rs1_val & instr.imm);
     Ok(())
 }
 
-pub fn slli(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn slli(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
 
     core.write_reg(instr.rd, rs1_val.wrapping_shl(instr.imm));
     Ok(())
 }
 
-pub fn srli(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn srli(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
 
     core.write_reg(instr.rd, rs1_val.wrapping_shr(instr.imm));
     Ok(())
 }
 
-pub fn srai(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn srai(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let val = (rs1_val as i32).wrapping_shr(instr.imm) as u32;
 
@@ -143,7 +143,7 @@ pub fn srai(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exce
     Ok(())
 }
 
-pub fn slti(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn slti(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let val = if (rs1_val as i32) < (instr.imm as i32) {
         1
@@ -155,7 +155,7 @@ pub fn slti(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exce
     Ok(())
 }
 
-pub fn sltui(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn sltui(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let val = if rs1_val < instr.imm { 1 } else { 0 };
 
@@ -163,10 +163,12 @@ pub fn sltui(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exc
     Ok(())
 }
 
-pub fn lb(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn lb(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
-    let addres = rs1_val.wrapping_add(instr.imm);
-    let mem_val = bus.read_byte(addres as usize)?;
+    let address = rs1_val.wrapping_add(instr.imm);
+    let phys_address = translate_address(core, bus, address, AccessType::Load)?;
+
+    let mem_val = bus.read_byte(&phys_address)?;
     let extend_val = (mem_val & 0b10000000 > 0) as u8 * 0xFF;
 
     let val = u32::from_le_bytes([mem_val, extend_val, extend_val, extend_val]);
@@ -175,12 +177,13 @@ pub fn lb(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exce
     Ok(())
 }
 
-pub fn lh(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn lh(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
-    let addres = rs1_val.wrapping_add(instr.imm);
+    let address = rs1_val.wrapping_add(instr.imm);
+    let phys_address = translate_address(core, bus, address, AccessType::Load)?;
 
-    let val_1 = bus.read_byte(addres as usize)?;
-    let val_2 = bus.read_byte(addres.wrapping_add(1) as usize)?;
+    let val_1 = bus.read_byte(&phys_address)?;
+    let val_2 = bus.read_byte(&phys_address.wrapping_add(1))?;
 
     let extend_val = (val_2 & 0b10000000 > 0) as u8 * 0xFF;
 
@@ -190,37 +193,36 @@ pub fn lh(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exce
     Ok(())
 }
 
-pub fn lw(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn lw(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
-    let addres = rs1_val.wrapping_add(instr.imm);
+    let address = rs1_val.wrapping_add(instr.imm);
+    let phys_address = translate_address(core, bus, address, AccessType::Load)?;
 
-    let val_1 = bus.read_byte(addres as usize)?;
-    let val_2 = bus.read_byte(addres.wrapping_add(1) as usize)?;
-    let val_3 = bus.read_byte(addres.wrapping_add(2) as usize)?;
-    let val_4 = bus.read_byte(addres.wrapping_add(3) as usize)?;
+    let val = bus.read_aligned_word(&phys_address)?;
 
-    let val = u32::from_le_bytes([val_1, val_2, val_3, val_4]);
     core.write_reg(instr.rd, val);
 
     Ok(())
 }
 
-pub fn lbu(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn lbu(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
-    let addres = rs1_val.wrapping_add(instr.imm);
+    let address = rs1_val.wrapping_add(instr.imm);
+    let phys_address = translate_address(core, bus, address, AccessType::Load)?;
 
-    let val = bus.read_byte(addres as usize)? as u32;
+    let val = bus.read_byte(&phys_address)? as u32;
     core.write_reg(instr.rd, val);
 
     Ok(())
 }
 
-pub fn lhu(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn lhu(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
-    let addres = rs1_val.wrapping_add(instr.imm);
+    let address = rs1_val.wrapping_add(instr.imm);
+    let phys_address = translate_address(core, bus, address, AccessType::Load)?;
 
-    let val_1 = bus.read_byte(addres as usize)?;
-    let val_2 = bus.read_byte(addres.wrapping_add(1) as usize)?;
+    let val_1 = bus.read_byte(&phys_address)?;
+    let val_2 = bus.read_byte(&phys_address.wrapping_add(1))?;
 
     let val = u32::from_le_bytes([val_1, val_2, 0x00, 0x00]);
     core.write_reg(instr.rd, val);
@@ -230,29 +232,29 @@ pub fn lhu(instr: &IInstruction, bus: &Bus, core: &mut RVCore) -> Result<(), Exc
 pub fn sb(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let rs2_val = core.read_reg(instr.rs2);
-    let addres = rs1_val.wrapping_add(instr.imm);
+    let address = rs1_val.wrapping_add(instr.imm);
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    bus.write_byte(addres as usize, rs2_val as u8)
+    bus.write_byte(&phys_address, rs2_val as u8)
 }
 
 pub fn sh(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let rs2_val = core.read_reg(instr.rs2);
-    let addres = rs1_val.wrapping_add(instr.imm);
+    let address = rs1_val.wrapping_add(instr.imm);
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    bus.write_byte(addres as usize, rs2_val as u8)?;
-    bus.write_byte(addres.wrapping_add(1) as usize, (rs2_val >> 8) as u8)
+    bus.write_byte(&phys_address, rs2_val as u8)?;
+    bus.write_byte(&phys_address.wrapping_add(1), (rs2_val >> 8) as u8)
 }
 
 pub fn sw(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let rs2_val = core.read_reg(instr.rs2);
-    let addres = rs1_val.wrapping_add(instr.imm);
+    let address = rs1_val.wrapping_add(instr.imm);
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    bus.write_byte(addres as usize, rs2_val as u8)?;
-    bus.write_byte(addres.wrapping_add(1) as usize, (rs2_val >> 8) as u8)?;
-    bus.write_byte(addres.wrapping_add(2) as usize, (rs2_val >> 16) as u8)?;
-    bus.write_byte(addres.wrapping_add(3) as usize, (rs2_val >> 24) as u8)
+    bus.write_aligned_word(&phys_address, rs2_val)
 }
 
 pub fn beq(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
@@ -363,7 +365,7 @@ pub fn jal(instr: &JInstruction, core: &mut RVCore) -> Result<(), Exception> {
     Ok(())
 }
 
-pub fn jalr(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn jalr(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let new_pc = rs1_val.wrapping_add(instr.imm) & 0xFFFFFFFE;
     if new_pc % 4 != 0 {
@@ -388,7 +390,7 @@ pub fn auipc(instr: &UInstruction, core: &mut RVCore) -> Result<(), Exception> {
     Ok(())
 }
 
-pub fn fence(_: &IInstruction, _: &Bus, _core: &mut RVCore) -> Result<(), Exception> {
+pub fn fence(_: &IInstruction, _: &mut Bus, _core: &mut RVCore) -> Result<(), Exception> {
     // TODO
     Ok(())
 }

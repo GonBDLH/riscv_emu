@@ -2,7 +2,7 @@ use crate::interpreter::{
     bus::Bus, csr::MEPC, riscv_core::{Exception, IInstruction, PrivilegeLevel, RVCore}
 };
 
-pub fn ecall(_: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn ecall(_: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     match core.privilege_level {
         PrivilegeLevel::Machine => Err(Exception::EnviromentCallFromMMode),
         PrivilegeLevel::Supervisor => Err(Exception::EnviromentCallFromSMode),
@@ -10,11 +10,11 @@ pub fn ecall(_: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Excepti
     }
 }
 
-pub fn ebreak(_: &IInstruction, _: &Bus, _: &mut RVCore) -> Result<(), Exception> {
+pub fn ebreak(_: &IInstruction, _: &mut Bus, _: &mut RVCore) -> Result<(), Exception> {
     Err(Exception::Breakpoint)
 }
 
-pub fn mret(_: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn mret(_: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     core.pc = core.control_and_status.read_csr(MEPC, core.privilege_level)?.wrapping_sub(4);
 
     let mstatus = core
@@ -39,6 +39,6 @@ pub fn mret(_: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exceptio
 }
 
 // TODO SRET
-pub fn sret(_: &IInstruction, _: &Bus, _: &mut RVCore) -> Result<(), Exception> {
+pub fn sret(_: &IInstruction, _: &mut Bus, _: &mut RVCore) -> Result<(), Exception> {
     Ok(())
 }

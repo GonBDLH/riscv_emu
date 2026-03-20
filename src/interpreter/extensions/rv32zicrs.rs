@@ -3,7 +3,7 @@ use crate::interpreter::{
     riscv_core::{Exception, IInstruction, RVCore},
 };
 
-pub fn csrrw(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn csrrw(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let csr = instr.imm as usize;
     let rs1_val = core.read_reg(instr.rs1);
     
@@ -21,7 +21,7 @@ pub fn csrrw(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exc
     Ok(())
 }
 
-pub fn csrrs(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn csrrs(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let csr = instr.imm as usize;
     let old_csr = core
         .control_and_status
@@ -39,7 +39,7 @@ pub fn csrrs(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exc
     Ok(())
 }
 
-pub fn csrrc(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn csrrc(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let csr = instr.imm as usize;
     let rs1_val = core.read_reg(instr.rs1);
     
@@ -58,7 +58,7 @@ pub fn csrrc(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exc
     Ok(())
 }
 
-pub fn csrrwi(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn csrrwi(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let csr = instr.imm as usize;
     let imm_val = instr.rs1;
 
@@ -76,7 +76,7 @@ pub fn csrrwi(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Ex
     Ok(())
 }
 
-pub fn csrrsi(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn csrrsi(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let csr = instr.imm as usize;
     let imm_val = instr.rs1;
 
@@ -95,7 +95,7 @@ pub fn csrrsi(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Ex
     Ok(())
 }
 
-pub fn csrrci(instr: &IInstruction, _: &Bus, core: &mut RVCore) -> Result<(), Exception> {
+pub fn csrrci(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let csr = instr.imm as usize;
     let imm_val = instr.rs1;
 

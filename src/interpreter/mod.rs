@@ -4,7 +4,7 @@ use ihex::{Reader, Record};
 
 use crate::interpreter::{
     bus::Bus,
-    riscv_core::{Exception, InstructionType, RVCore},
+    riscv_core::{Exception, InstructionType, RVCore}, virtual_memory::sv32::{AccessType, PhysicalAddress, translate_address},
 };
 
 mod bus;
@@ -44,16 +44,19 @@ impl Interpreter {
                 value.iter().enumerate().for_each(|(add, val)| {
                     let _ = self
                         .bus
-                        .write_byte(0x80000000 + offset as usize + add, *val);
+                        .write_byte(&PhysicalAddress(0x80000000u64 + offset as u64 + add as u64), *val);
                 });
             }
         }
     }
 
     pub fn fetch(&mut self) -> Result<u32, Exception> {
+        let pc = self.core.pc;
+        let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute)?;
+
         let val = self
             .bus
-            .read_aligned_word(self.core.pc as usize)
+            .read_aligned_word(&phys_pc)
             .map_err(|_| Exception::InstructionAccessFault)?;
 
         Ok(val)

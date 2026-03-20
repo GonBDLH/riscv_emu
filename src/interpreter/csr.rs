@@ -61,7 +61,7 @@ pub struct ControlAndStatus {
     mstatus: MStatus,
     satp: Satp32,
 
-    minstret_loaded: bool
+    minstret_loaded: bool,
 }
 
 impl ControlAndStatus {
@@ -84,7 +84,12 @@ impl ControlAndStatus {
 
         let satp = Satp32(0);
 
-        Self { csrs, mstatus, satp, minstret_loaded: false }
+        Self {
+            csrs,
+            mstatus,
+            satp,
+            minstret_loaded: false,
+        }
     }
 
     pub fn read_csr(&self, csr: usize, priv_level: PrivilegeLevel) -> Result<u32, Exception> {
@@ -109,9 +114,9 @@ impl ControlAndStatus {
             MIP => self.csrs[MIP] & MIP_MASK,
             MIE => self.csrs[MIE] & MIE_MASK,
             MHARTID => self.read_hartid(),
-            TSELECT => u32::MAX,    // TODO Cambiar si se incluye el modo debug
+            TSELECT => u32::MAX, // TODO Cambiar si se incluye el modo debug
 
-            SSTATUS => self.csrs[MSTATUS] & SSTATUS_MASK,
+            SSTATUS => self.mstatus.0 & SSTATUS_MASK,
             SIP => self.csrs[MIP] & SIP_MASK,
             SIE => self.csrs[MIE] & SIE_MASK,
             SATP => self.satp.0,
@@ -143,8 +148,10 @@ impl ControlAndStatus {
             MINSTRET | MINSTRETH => {
                 self.minstret_loaded = true;
                 self.csrs[csr] = val;
-            },
+            }
             MEPC => self.csrs[MEPC] = val & 0xFFFFFFFC,
+
+            SSTATUS => self.mstatus.0 = (self.mstatus.0 & !SSTATUS_MASK) | (val & SSTATUS_MASK),
             _ => self.csrs[csr] = val,
         }
 
@@ -199,12 +206,12 @@ impl ControlAndStatus {
     pub fn increment_minstret(&mut self) {
         if self.minstret_loaded {
             self.minstret_loaded = false;
-            return; 
+            return;
         }
 
         let minstret = self.csrs[MINSTRET];
         let minstreth = self.csrs[MINSTRETH];
-        
+
         let minsret_64 = (minstret as u64) + ((minstreth as u64) << 32);
         let new_minstret = minsret_64.wrapping_add(1);
 
@@ -243,7 +250,7 @@ bitfield! {
 bitfield! {
     pub struct Satp32(u32);
     u32;
-    pub get_ppn, set_ppn: 0,21;
-    pub get_asid, set_asid: 22, 30;
+    pub get_ppn, set_ppn: 21, 0;
+    pub get_asid, set_asid: 30, 22;
     pub get_mode, set_mode: 31
 }

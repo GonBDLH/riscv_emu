@@ -1,31 +1,33 @@
 use crate::interpreter::{
     bus::Bus,
-    riscv_core::{AtomicInstruction, Exception, RVCore},
+    riscv_core::{AtomicInstruction, Exception, RVCore}, virtual_memory::sv32::{AccessType, translate_address},
 };
 
 pub fn lr_w(instr: &AtomicInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
-    let address = core.read_reg(instr.rs1) as usize;
+    let address = core.read_reg(instr.rs1);
+    let phys_address = translate_address(core, bus, address, AccessType::Load)?;
 
-    let val = bus.read_aligned_word(address)?;
+    let val = bus.read_aligned_word(&phys_address)?;
     core.write_reg(instr.rd, val);
-    bus.reserve_address(core.get_hartid(), address);
+    bus.reserve_address(core.get_hartid(), phys_address.0 as usize);
 
     Ok(())
 }
 
 pub fn sc_w(instr: &AtomicInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
-    let address = core.read_reg(instr.rs1) as usize;
+    let address = core.read_reg(instr.rs1);
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
     let rs2_val = core.read_reg(instr.rs2);
 
-    if bus.is_address_reserved(core.get_hartid(), address) {
-        bus.write_aligned_word(address, rs2_val)?;
+    if bus.is_address_reserved(core.get_hartid(), phys_address.0 as usize) {
+        bus.write_aligned_word(&phys_address, rs2_val)?;
         core.write_reg(instr.rd, 0);
     } else {
         core.write_reg(instr.rd, 1);
     }
 
-    bus.invalidate_reserved_address(core.get_hartid(), address);
+    bus.invalidate_reserved_address(core.get_hartid(), phys_address.0 as usize);
 
     Ok(())
 }
@@ -35,11 +37,12 @@ pub fn amoswap_w(
     bus: &mut Bus,
     core: &mut RVCore,
 ) -> Result<(), Exception> {
-    let address = core.read_reg(instr.rs1) as usize;
+    let address = core.read_reg(instr.rs1);
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    let tmp = bus.read_aligned_word(address)?;
+    let tmp = bus.read_aligned_word(&phys_address)?;
 
-    bus.write_aligned_word(address, core.read_reg(instr.rs2))?;
+    bus.write_aligned_word(&phys_address, core.read_reg(instr.rs2))?;
 
     core.write_reg(instr.rd, tmp);
 
@@ -51,11 +54,12 @@ pub fn amoadd_w(
     bus: &mut Bus,
     core: &mut RVCore,
 ) -> Result<(), Exception> {
-    let address = core.read_reg(instr.rs1) as usize;
+    let address = core.read_reg(instr.rs1);
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    let tmp = bus.read_aligned_word(address)?;
+    let tmp = bus.read_aligned_word(&phys_address)?;
 
-    bus.write_aligned_word(address, tmp.wrapping_add(core.read_reg(instr.rs2)))?;
+    bus.write_aligned_word(&phys_address, tmp.wrapping_add(core.read_reg(instr.rs2)))?;
 
     core.write_reg(instr.rd, tmp);
 
@@ -67,11 +71,12 @@ pub fn amoand_w(
     bus: &mut Bus,
     core: &mut RVCore,
 ) -> Result<(), Exception> {
-    let address = core.read_reg(instr.rs1) as usize;
+    let address = core.read_reg(instr.rs1);
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    let tmp = bus.read_aligned_word(address)?;
+    let tmp = bus.read_aligned_word(&phys_address)?;
 
-    bus.write_aligned_word(address, tmp & core.read_reg(instr.rs2))?;
+    bus.write_aligned_word(&phys_address, tmp & core.read_reg(instr.rs2))?;
 
     core.write_reg(instr.rd, tmp);
 
@@ -83,11 +88,12 @@ pub fn amoor_w(
     bus: &mut Bus,
     core: &mut RVCore,
 ) -> Result<(), Exception> {
-    let address = core.read_reg(instr.rs1) as usize;
+    let address = core.read_reg(instr.rs1);
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    let tmp = bus.read_aligned_word(address)?;
+    let tmp = bus.read_aligned_word(&phys_address)?;
 
-    bus.write_aligned_word(address, tmp | core.read_reg(instr.rs2))?;
+    bus.write_aligned_word(&phys_address, tmp | core.read_reg(instr.rs2))?;
 
     core.write_reg(instr.rd, tmp);
 
@@ -99,11 +105,12 @@ pub fn amoxor_w(
     bus: &mut Bus,
     core: &mut RVCore,
 ) -> Result<(), Exception> {
-    let address = core.read_reg(instr.rs1) as usize;
+    let address = core.read_reg(instr.rs1);
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    let tmp = bus.read_aligned_word(address)?;
+    let tmp = bus.read_aligned_word(&phys_address)?;
 
-    bus.write_aligned_word(address, tmp ^ core.read_reg(instr.rs2))?;
+    bus.write_aligned_word(&phys_address, tmp ^ core.read_reg(instr.rs2))?;
 
     core.write_reg(instr.rd, tmp);
 
@@ -115,12 +122,13 @@ pub fn amomax_w(
     bus: &mut Bus,
     core: &mut RVCore,
 ) -> Result<(), Exception> {
-    let address = core.read_reg(instr.rs1) as usize;
+    let address = core.read_reg(instr.rs1);
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    let tmp = bus.read_aligned_word(address)?;
+    let tmp = bus.read_aligned_word(&phys_address)?;
 
     bus.write_aligned_word(
-        address,
+        &phys_address,
         (tmp as i32).max(core.read_reg(instr.rs2) as i32) as u32,
     )?;
 
@@ -134,12 +142,13 @@ pub fn amomin_w(
     bus: &mut Bus,
     core: &mut RVCore,
 ) -> Result<(), Exception> {
-    let address = core.read_reg(instr.rs1) as usize;
+    let address = core.read_reg(instr.rs1);
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    let tmp = bus.read_aligned_word(address)?;
+    let tmp = bus.read_aligned_word(&phys_address)?;
 
     bus.write_aligned_word(
-        address,
+        &phys_address,
         (tmp as i32).min(core.read_reg(instr.rs2) as i32) as u32,
     )?;
 
@@ -153,11 +162,12 @@ pub fn amomaxu_w(
     bus: &mut Bus,
     core: &mut RVCore,
 ) -> Result<(), Exception> {
-    let address = core.read_reg(instr.rs1) as usize;
+    let address = core.read_reg(instr.rs1);
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    let tmp = bus.read_aligned_word(address)?;
+    let tmp = bus.read_aligned_word(&phys_address)?;
 
-    bus.write_aligned_word(address, tmp.max(core.read_reg(instr.rs2)))?;
+    bus.write_aligned_word(&phys_address, tmp.max(core.read_reg(instr.rs2)))?;
 
     core.write_reg(instr.rd, tmp);
 
@@ -169,11 +179,12 @@ pub fn amominu_w(
     bus: &mut Bus,
     core: &mut RVCore,
 ) -> Result<(), Exception> {
-    let address = core.read_reg(instr.rs1) as usize;
+    let address = core.read_reg(instr.rs1);
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    let tmp = bus.read_aligned_word(address)?;
+    let tmp = bus.read_aligned_word(&phys_address)?;
 
-    bus.write_aligned_word(address, tmp.min(core.read_reg(instr.rs2)))?;
+    bus.write_aligned_word(&phys_address, tmp.min(core.read_reg(instr.rs2)))?;
 
     core.write_reg(instr.rd, tmp);
 

@@ -486,7 +486,7 @@ pub struct IInstruction {
 
     pub data: u32,
 
-    function: fn(&IInstruction, &Bus, &mut RVCore) -> Result<(), Exception>,
+    function: fn(&IInstruction, &mut Bus, &mut RVCore) -> Result<(), Exception>,
 }
 
 impl IInstruction {
@@ -495,7 +495,7 @@ impl IInstruction {
         rs1: u32,
         imm: u32,
         rd: u32,
-        function: fn(&IInstruction, &Bus, &mut RVCore) -> Result<(), Exception>,
+        function: fn(&IInstruction, &mut Bus, &mut RVCore) -> Result<(), Exception>,
     ) -> Self {
         Self {
             data,
@@ -643,7 +643,7 @@ impl AtomicInstruction {
     }
 }
 
-#[derive(Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub enum PrivilegeLevel {
     User = 0x00,
     Supervisor = 0x01,
