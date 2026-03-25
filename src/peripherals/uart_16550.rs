@@ -17,14 +17,14 @@ const UART_LSR_RX: u8 = 1;
 const UART_LSR_TX: u8 = 1 << 5;
 
 pub struct Uart16550 {
-    regs: Arc<(Mutex<[u8; 8]>, Condvar)>,
+    regs: Arc<(Mutex<[u8; 0x1000]>, Condvar)>,
 
     interrupt: Arc<AtomicBool>,
 }
 
 impl Uart16550 {
     pub fn new() -> Self {
-        let regs = Arc::new((Mutex::new([0; 8]), Condvar::new()));
+        let regs = Arc::new((Mutex::new([0; 0x1000]), Condvar::new()));
         let interrupt = Arc::new(AtomicBool::new(false));
 
         {
@@ -76,6 +76,8 @@ impl Uart16550 {
     }
 
     pub fn write(&mut self, address: usize, val: u8) {
+        println!("{:08X} {:08X}", address, val);
+
         let (regs, _cvar) = &*self.regs;
         let mut regs = regs.lock().expect("Mutex envenendado");
         match address {

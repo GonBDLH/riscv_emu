@@ -1,9 +1,9 @@
 #![allow(clippy::items_after_test_module)]
 
-use std::collections::HashSet;
+use std::{collections::HashSet, io::{Write, stdout}};
 
 use crate::{
-    interpreter::{NUM_HARTS, riscv_core::Exception, virtual_memory::sv32::PhysicalAddress},
+    interpreter::{NUM_HARTS, riscv_core::{Exception, ExceptionType}, virtual_memory::sv32::{PhysicalAddress, translate_address}},
     peripherals::uart_16550::Uart16550,
 };
 
@@ -16,15 +16,14 @@ pub const ROM_SIZE: usize = 0x00001000;
 pub const ROM_END: usize = ROM_BASE + ROM_SIZE;
 
 pub const UART_BASE: usize = 0x10000000;
-pub const UART_SIZE: usize = 8;
+pub const UART_SIZE: usize = 0x100;
 pub const UART_END: usize = UART_BASE + UART_SIZE;
 
 pub struct Bus {
     #[cfg(test)]
-    pub dram: Vec<u8>,
+    to_host: usize,
 
-    #[cfg(not(test))]
-    dram: Vec<u8>,
+    pub dram: Vec<u8>,
 
     rom: Vec<u8>,
     pub uart: Uart16550,
@@ -36,6 +35,9 @@ pub struct Bus {
 impl Default for Bus {
     fn default() -> Self {
         Self {
+            #[cfg(test)]
+            to_host: 0x80001000,
+
             dram: vec![0x00; DRAM_SIZE],
             rom: vec![0x00; ROM_SIZE],
             uart: Uart16550::new(),
@@ -45,6 +47,14 @@ impl Default for Bus {
 }
 
 impl Bus {
+    #[cfg(test)]
+    pub fn new_test(to_host: usize) -> Self {
+        let mut bus = Self::default();
+        bus.to_host = to_host;
+
+        bus
+    }
+
     pub fn read_byte(&self, phys_address: &PhysicalAddress) -> Result<u8, Exception> {
         let address = phys_address.0 as usize;
 
@@ -52,7 +62,7 @@ impl Bus {
             DRAM_BASE..DRAM_END => Ok(self.dram[address - DRAM_BASE]),
             ROM_BASE..ROM_END => Ok(self.rom[address - ROM_BASE]),
             UART_BASE..UART_END => Ok(self.uart.read(address - UART_BASE)),
-            _ => Err(Exception::LoadAccessFault),
+            _ => Err(Exception::new(ExceptionType::LoadAccessFault, 0)),
         }
     }
 
@@ -76,13 +86,23 @@ impl Bus {
                 Ok(())
             }
 
-            _ => Err(Exception::StoreAmoAccessFault),
+            _ => Err(Exception::new(ExceptionType::StoreAmoAccessFault, 0)),
         }
     }
 
     pub fn read_aligned_word(&self, phys_address: &PhysicalAddress) -> Result<u32, Exception> {
         if phys_address.0 % 4 != 0 {
-            return Err(Exception::LoadAddressMisaligned);
+            return Err(Exception::new(ExceptionType::LoadAddressMisaligned, 0));
+        }
+
+        #[cfg(test)]
+        if (self.to_host + 0x40) == phys_address.0 as usize {
+            return Ok(1);
+        }
+
+        #[cfg(not(test))]
+        if (0x80001000 + 0x40) == phys_address.0 as usize {
+            return Ok(1);
         }
 
         let val_0 = self.read_byte(phys_address)?;
@@ -104,7 +124,23 @@ impl Bus {
 
     pub fn write_aligned_word(&mut self, phys_address: &PhysicalAddress, word: u32) -> Result<(), Exception> {
         if phys_address.0 % 4 != 0 {
-            return Err(Exception::StoreAmoAddressMisaligned);
+            return Err(Exception::new(ExceptionType::StoreAmoAddressMisaligned, 0));
+        }
+
+        if phys_address.0 == 0x80001000 {
+            println!("{:#016X} {:#08X}", phys_address.0, word);
+
+        }
+
+        #[cfg(test)]
+        if phys_address.0 == self.to_host as u64 {
+            println!("{word}");
+            if word == 1 {
+                panic!("PASS");
+            } else {
+                panic!("FAIL {}", word);
+            }
+            
         }
 
         let bytes = word.to_le_bytes();

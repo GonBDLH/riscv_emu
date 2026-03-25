@@ -1,8 +1,7 @@
 use crate::interpreter::{
     bus::Bus,
     riscv_core::{
-        BInstruction, Exception, IInstruction, JInstruction, RInstruction, RVCore, SInstruction,
-        UInstruction,
+        BInstruction, Exception, ExceptionType, IInstruction, JInstruction, RInstruction, RVCore, SInstruction, UInstruction, WithVal
     }, virtual_memory::sv32::{AccessType, translate_address},
 };
 
@@ -168,7 +167,7 @@ pub fn lb(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::Load)?;
 
-    let mem_val = bus.read_byte(&phys_address)?;
+    let mem_val = bus.read_byte(&phys_address).with_val(address)?;
     let extend_val = (mem_val & 0b10000000 > 0) as u8 * 0xFF;
 
     let val = u32::from_le_bytes([mem_val, extend_val, extend_val, extend_val]);
@@ -182,8 +181,8 @@ pub fn lh(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::Load)?;
 
-    let val_1 = bus.read_byte(&phys_address)?;
-    let val_2 = bus.read_byte(&phys_address.wrapping_add(1))?;
+    let val_1 = bus.read_byte(&phys_address).with_val(address)?;
+    let val_2 = bus.read_byte(&phys_address.wrapping_add(1)).with_val(address)?;
 
     let extend_val = (val_2 & 0b10000000 > 0) as u8 * 0xFF;
 
@@ -198,7 +197,7 @@ pub fn lw(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::Load)?;
 
-    let val = bus.read_aligned_word(&phys_address)?;
+    let val = bus.read_aligned_word(&phys_address).with_val(address)?;
 
     core.write_reg(instr.rd, val);
 
@@ -210,7 +209,7 @@ pub fn lbu(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(),
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::Load)?;
 
-    let val = bus.read_byte(&phys_address)? as u32;
+    let val = bus.read_byte(&phys_address).with_val(address)? as u32;
     core.write_reg(instr.rd, val);
 
     Ok(())
@@ -221,8 +220,8 @@ pub fn lhu(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(),
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::Load)?;
 
-    let val_1 = bus.read_byte(&phys_address)?;
-    let val_2 = bus.read_byte(&phys_address.wrapping_add(1))?;
+    let val_1 = bus.read_byte(&phys_address).with_val(address)?;
+    let val_2 = bus.read_byte(&phys_address.wrapping_add(1)).with_val(address)?;
 
     let val = u32::from_le_bytes([val_1, val_2, 0x00, 0x00]);
     core.write_reg(instr.rd, val);
@@ -235,7 +234,7 @@ pub fn sb(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    bus.write_byte(&phys_address, rs2_val as u8)
+    bus.write_byte(&phys_address, rs2_val as u8).with_val(address)
 }
 
 pub fn sh(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
@@ -244,8 +243,8 @@ pub fn sh(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    bus.write_byte(&phys_address, rs2_val as u8)?;
-    bus.write_byte(&phys_address.wrapping_add(1), (rs2_val >> 8) as u8)
+    bus.write_byte(&phys_address, rs2_val as u8).with_val(address)?;
+    bus.write_byte(&phys_address.wrapping_add(1), (rs2_val >> 8) as u8).with_val(address)
 }
 
 pub fn sw(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
@@ -254,7 +253,7 @@ pub fn sw(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    bus.write_aligned_word(&phys_address, rs2_val)
+    bus.write_aligned_word(&phys_address, rs2_val).with_val(address)
 }
 
 pub fn beq(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
@@ -264,7 +263,7 @@ pub fn beq(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
         if new_pc % 4 != 0 {
-            return Err(Exception::InstructionAddressMisaligned);
+            return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
         }
 
         core.pc = new_pc.wrapping_sub(4);
@@ -280,7 +279,7 @@ pub fn bne(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
         if new_pc % 4 != 0 {
-            return Err(Exception::InstructionAddressMisaligned);
+            return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
         }
 
         core.pc = new_pc.wrapping_sub(4);
@@ -296,7 +295,7 @@ pub fn blt(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
         if new_pc % 4 != 0 {
-            return Err(Exception::InstructionAddressMisaligned);
+            return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
         }
 
         core.pc = new_pc.wrapping_sub(4);
@@ -312,7 +311,7 @@ pub fn bge(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
         if new_pc % 4 != 0 {
-            return Err(Exception::InstructionAddressMisaligned);
+            return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
         }
 
         core.pc = new_pc.wrapping_sub(4);
@@ -328,7 +327,7 @@ pub fn bltu(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
         if new_pc % 4 != 0 {
-            return Err(Exception::InstructionAddressMisaligned);
+            return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
         }
 
         core.pc = new_pc.wrapping_sub(4);
@@ -344,7 +343,7 @@ pub fn bgeu(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
         if new_pc % 4 != 0 {
-            return Err(Exception::InstructionAddressMisaligned);
+            return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
         }
 
         core.pc = new_pc.wrapping_sub(4);
@@ -356,7 +355,7 @@ pub fn bgeu(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
 pub fn jal(instr: &JInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let new_pc = core.pc.wrapping_add(instr.imm);
     if new_pc % 4 != 0 {
-        return Err(Exception::InstructionAddressMisaligned);
+        return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
     }
 
     core.write_reg(instr.rd, core.pc.wrapping_add(4));
@@ -369,7 +368,7 @@ pub fn jalr(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), 
     let rs1_val = core.read_reg(instr.rs1);
     let new_pc = rs1_val.wrapping_add(instr.imm) & 0xFFFFFFFE;
     if new_pc % 4 != 0 {
-        return Err(Exception::InstructionAddressMisaligned);
+        return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
     }
 
     core.write_reg(instr.rd, core.pc.wrapping_add(4));

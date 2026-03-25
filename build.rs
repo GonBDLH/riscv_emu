@@ -40,10 +40,22 @@ use ntest::timeout;
 #[test]
 #[timeout(2000)]
 fn {test_name}() {{
-    let mut interpreter = Interpreter::new();
-    interpreter.load_hex("rv_tests/{name}");
-    interpreter.run();
-    assert_eq!(interpreter.read_test_result({to_host:#010X}), 1);
+    use std::panic;
+
+    let result = panic::catch_unwind(|| {{
+        let mut interpreter = Interpreter::new_test({to_host:#08X});
+        interpreter.load_hex("rv_tests/{name}");
+        interpreter.run();
+    }});
+
+    let err = result.expect_err("Expected panic");
+
+    let msg = err.downcast_ref::<&str>()
+        .map(|s| *s)
+        .or_else(|| err.downcast_ref::<String>().map(|s| s.as_str()))
+        .unwrap();
+
+    assert!(msg.contains("PASS"));
 }}
 "#
                 )

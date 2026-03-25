@@ -1,6 +1,6 @@
 use crate::interpreter::{
     bus::Bus,
-    riscv_core::{Exception, IInstruction, RVCore},
+    riscv_core::{Exception, IInstruction, RVCore, WithVal},
 };
 
 pub fn csrrw(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
@@ -11,7 +11,7 @@ pub fn csrrw(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(),
         let old_csr = core
             .control_and_status
             .read_csr(csr, core.privilege_level)
-            .map_err(|_| Exception::IllegalInstruction(instr.data))?;
+            .with_val(instr.data)?;
         core.write_reg(instr.rd, old_csr);
     }
 
@@ -26,7 +26,7 @@ pub fn csrrs(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(),
     let old_csr = core
         .control_and_status
         .read_csr(csr, core.privilege_level)
-        .map_err(|_| Exception::IllegalInstruction(instr.data))?;
+        .with_val(instr.data)?;
 
     if instr.rs1 != 0 {
         let rs1_val = core.read_reg(instr.rs1);
@@ -46,7 +46,7 @@ pub fn csrrc(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(),
     let old_csr = core
         .control_and_status
         .read_csr(csr, core.privilege_level)
-        .map_err(|_| Exception::IllegalInstruction(instr.data))?;
+        .with_val(instr.data)?;
 
     if instr.rs1 != 0 {
         let new_csr = old_csr & !rs1_val;
@@ -66,7 +66,7 @@ pub fn csrrwi(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<()
         let old_csr = core
             .control_and_status
             .read_csr(csr, core.privilege_level)
-            .map_err(|_| Exception::IllegalInstruction(instr.data))?;
+            .with_val(instr.data)?;
         core.write_reg(instr.rd, old_csr);
     }
 
@@ -83,7 +83,7 @@ pub fn csrrsi(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<()
     let old_csr = core
         .control_and_status
         .read_csr(csr, core.privilege_level)
-        .map_err(|_| Exception::IllegalInstruction(instr.data))?;
+        .with_val(instr.data)?;
     core.write_reg(instr.rd, old_csr);
 
     if imm_val != 0 {
@@ -102,7 +102,7 @@ pub fn csrrci(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<()
     let old_csr = core
         .control_and_status
         .read_csr(csr, core.privilege_level)
-        .map_err(|_| Exception::IllegalInstruction(instr.data))?;
+        .with_val(instr.data)?;
     core.write_reg(instr.rd, old_csr);
 
     if imm_val != 0 {

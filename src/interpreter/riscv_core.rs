@@ -2,9 +2,17 @@ use crate::interpreter::bus::Bus;
 use crate::interpreter::csr::ControlAndStatus;
 use crate::interpreter::csr::MCAUSE;
 use crate::interpreter::csr::MEDELEG;
+use crate::interpreter::csr::MEDELEGH;
 use crate::interpreter::csr::MEPC;
+use crate::interpreter::csr::MIDELEG;
+use crate::interpreter::csr::MSTATUS;
 use crate::interpreter::csr::MTVAL;
 use crate::interpreter::csr::MTVEC;
+use crate::interpreter::csr::SCAUSE;
+use crate::interpreter::csr::SEPC;
+use crate::interpreter::csr::SSTATUS;
+use crate::interpreter::csr::STVAL;
+use crate::interpreter::csr::STVEC;
 use crate::interpreter::extensions::rv32a::*;
 use crate::interpreter::extensions::rv32i::*;
 use crate::interpreter::extensions::rv32m::*;
@@ -348,9 +356,10 @@ impl RVCore {
             0x0 => match (csr, rs1, rd) {
                 (0, 0, 0) => Some(IInstruction::new(instr, rs1, csr, rd, ecall)),
                 (1, 0, 0) => Some(IInstruction::new(instr, rs1, csr, rd, ebreak)),
-
+                
                 // Tecnicamente son instrucciones R, pero asi me simplifica la vida
                 (0x102, 0, 0) => Some(IInstruction::new(instr, rs1, csr, rd, sret)),
+                (0x120..=0x13F, _, _) => Some(IInstruction::new(instr, rs1, csr, rd, sfence_vma)),
                 (0x302, 0, 0) => Some(IInstruction::new(instr, rs1, csr, rd, mret)),
                 _ => None,
             },
@@ -662,100 +671,205 @@ impl PrivilegeLevel {
     }
 }
 
+trait Trapable {
+    fn get_cause(&self) -> u32;
+    fn get_val(&self) -> u32;
+}
+
 #[derive(Clone, Copy, Debug)]
-pub enum Exception {
-    InstructionAddressMisaligned,
-    InstructionAccessFault,
-    IllegalInstruction(u32),
-    Breakpoint,
-    LoadAddressMisaligned,
-    LoadAccessFault,
-    StoreAmoAddressMisaligned,
-    StoreAmoAccessFault,
-    EnviromentCallFromUMode,
-    EnviromentCallFromSMode,
-    EnviromentCallFromMMode,
-    InstructionPageFault,
-    LoadPageFault,
-    StoreAmoPageFault,
-    DoubleTrap,
-    SoftwareCheck,
-    HardwareError,
+pub enum ExceptionType {
+    InstructionAddressMisaligned = 0,
+    InstructionAccessFault = 1,
+    IllegalInstruction = 2,
+    Breakpoint = 3,
+    LoadAddressMisaligned = 4,
+    LoadAccessFault = 5,
+    StoreAmoAddressMisaligned = 6,
+    StoreAmoAccessFault = 7,
+    EnviromentCallFromUMode = 8,
+    EnviromentCallFromSMode = 9,
+    EnviromentCallFromMMode = 11,
+    InstructionPageFault = 12,
+    LoadPageFault = 13,
+    StoreAmoPageFault = 15,
+    DoubleTrap = 16,
+    SoftwareCheck = 18,
+    HardwareError = 19,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Exception {
+    exc_type: ExceptionType,
+    val: u32
+}
+
+impl Trapable for Exception {
+    fn get_cause(&self) -> u32 {
+        self.exc_type as u32
+    }
+
+    fn get_val(&self) -> u32 {
+        self.val
+    }
 }
 
 impl Exception {
+    pub fn new(exc_type: ExceptionType, val: u32) -> Self {
+        Self {
+            exc_type, val
+        }
+    }
+}
+
+pub trait WithVal<T> {
+    fn with_val(self, val: u32) -> Self;
+}
+
+impl<T> WithVal<T> for Result<T, Exception> {
+    fn with_val(self, val: u32) -> Self {
+        self.map_err(|mut e| {
+            e.val = val;
+            e
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct Interrupt {
+    int_type: InterruptType,
+    val: u32
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum InterruptType {
+    SupervisorSwInt = 1,
+    MachineSwInt = 3,
+    SupervisorTimerInt = 5,
+    MachineTimerInt = 7,
+    SupervisorExternalInt = 9,
+    MachineExternalInt = 11,
+    CounterOverflowInt = 13,
+}
+
+impl Trapable for Interrupt {
     fn get_cause(&self) -> u32 {
-        match self {
-            Self::InstructionAddressMisaligned => 0,
-            Self::InstructionAccessFault => 1,
-            Self::IllegalInstruction(_) => 2,
-            Self::Breakpoint => 3,
-            Self::LoadAddressMisaligned => 4,
-            Self::LoadAccessFault => 5,
-            Self::StoreAmoAddressMisaligned => 6,
-            Self::StoreAmoAccessFault => 7,
-            Self::EnviromentCallFromUMode => 8,
-            Self::EnviromentCallFromSMode => 9,
-            Self::EnviromentCallFromMMode => 11,
-            Self::InstructionPageFault => 12,
-            Self::LoadPageFault => 13,
-            Self::StoreAmoPageFault => 15,
-            Self::DoubleTrap => 16,
-            Self::SoftwareCheck => 18,
-            Self::HardwareError => 19,
-        }
+        self.int_type as u32
     }
 
-    fn get_val(&self) -> Option<u32> {
-        match self {
-            Self::IllegalInstruction(val) => Some(*val),
-            // TODO
-            _ => None,
-        }
-    }
-
-    pub fn trap(&self, core: &mut RVCore) -> Trap {
-        let prev_priv_level = core.privilege_level;
-        let _medeleg = core.control_and_status.read_csr_unchecked(MEDELEG);
-        let cause = self.get_cause();
-        let tval = self.get_val();
-
-        // if prev_priv_level as u32 <= PrivilegeLevel::Supervisor as u32 && ((medeleg >> cause) & 1) > 0 {
-        //     todo!()
-        // } else {
-        core.privilege_level = PrivilegeLevel::Machine;
-
-        core.control_and_status.write_csr_unchecked(MEPC, core.pc);
-        core.control_and_status.write_csr_unchecked(MCAUSE, cause);
-        if let Some(val) = tval {
-            core.control_and_status.write_csr_unchecked(MTVAL, val);
-        }
-
-        let mstatus = core
-            .control_and_status
-            .get_mstatus_mut_ref(core.privilege_level)
-            .unwrap();
-        mstatus.set_mpp(prev_priv_level as u32);
-        mstatus.set_mpie(mstatus.get_mie());
-        mstatus.set_mie(false);
-
-        let mtvec = core.control_and_status.read_csr_unchecked(MTVEC);
-        let base = mtvec & 0xFFFFFFFC;
-        if mtvec & 0b11 == 0 {
-            core.pc = base;
-        } else {
-            core.pc = base + 4 * cause;
-        }
-        // }
-
-        // TODO
-        Trap::Requested
+    fn get_val(&self) -> u32 {
+        self.val
     }
 }
 
 pub enum Trap {
-    Contained,
-    Requested,
-    Invisible,
-    Fatal,
+    Exception(Exception),
+    Interrupt(Interrupt),
+}
+
+impl Trapable for Trap {
+    fn get_cause(&self) -> u32 {
+        match self {
+            Self::Exception(exc) => exc.get_cause(),
+            Self::Interrupt(int) => int.get_cause()
+        }
+    }
+
+    fn get_val(&self) -> u32 {
+        match self {
+            Self::Exception(exc) => exc.get_val(),
+            Self::Interrupt(int) => int.get_val()
+        }
+    }
+}
+
+impl Trap {
+    fn handle_machine_trap(&self, core: &mut RVCore, cause: u32) {
+        let prev_priv_level = core.privilege_level;
+
+        let tval = self.get_val();
+
+        core.privilege_level = PrivilegeLevel::Machine;
+
+        core.control_and_status.write_csr(MEPC, core.privilege_level, core.pc).unwrap();
+        core.control_and_status.write_csr(MCAUSE, core.privilege_level, cause).unwrap();
+        core.control_and_status.write_csr(MTVAL, core.privilege_level, tval).unwrap();
+
+        let mut mstatus = core
+            .control_and_status
+            .read_mstatus_unchecked();
+        mstatus.set_mpp(prev_priv_level as u32);
+        mstatus.set_mpie(mstatus.get_mie());
+        mstatus.set_mie(false);
+        core.control_and_status.write_csr(MSTATUS, core.privilege_level, mstatus.0).unwrap();
+
+        let mtvec = core.control_and_status.read_csr(MTVEC, core.privilege_level).unwrap();
+        let base = mtvec & 0xFFFFFFFC;
+
+        // TODO Esto es para INTS (Creo)
+        // if mtvec & 0b11 == 0 {
+        //     core.pc = base;
+        // } else {
+        //     core.pc = base + 4 * cause;
+        // }
+        core.pc = base;
+    }
+
+    fn handle_supervisor_trap(&self, core: &mut RVCore, cause: u32) {
+        let prev_priv_level = core.privilege_level;
+
+        let tval = self.get_val();
+
+        core.privilege_level = PrivilegeLevel::Supervisor;
+
+        core.control_and_status.write_csr(SEPC, core.privilege_level, core.pc).unwrap();
+        core.control_and_status.write_csr(SCAUSE, core.privilege_level, cause).unwrap();
+        core.control_and_status.write_csr(STVAL, core.privilege_level, tval).unwrap();
+
+        let mut sstatus = core.control_and_status.read_sstatus_unchecked();
+        sstatus.set_spp(prev_priv_level == PrivilegeLevel::Supervisor);
+        sstatus.set_spie(sstatus.get_sie());
+        sstatus.set_sie(false);
+        core.control_and_status.write_csr(SSTATUS, core.privilege_level, sstatus.0).unwrap();
+
+        let stvec = core.control_and_status.read_csr(STVEC, core.privilege_level).unwrap();
+        let base = stvec & 0xFFFFFFFC;
+        
+        // TODO Esto es para INTS (Creo)
+        // if mtvec & 0b11 == 0 {
+        //     core.pc = base;
+        // } else {
+        //     core.pc = base + 4 * cause;
+        // }
+        core.pc = base;
+    }
+
+    pub fn handle(&self, core: &mut RVCore) {
+        let prev_priv_level = core.privilege_level;
+        let mut cause = self.get_cause();
+
+        let delegated = match self {
+            Self::Exception(_) => {
+                let medelegl = core.control_and_status.read_csr(MEDELEG, PrivilegeLevel::Machine).unwrap();
+                let medelegh = core.control_and_status.read_csr(MEDELEGH, PrivilegeLevel::Machine).unwrap();
+                let medeleg = ((medelegh as u64) << 32) | (medelegl as u64);
+
+                ((1 << cause) & medeleg) > 0
+            }
+            Self::Interrupt(_) => {
+                let mideleg = core.control_and_status.read_csr(MIDELEG, PrivilegeLevel::Machine).unwrap();
+                
+                let ret = ((1 << cause) & mideleg) > 0;
+                cause |= 1 << 31;
+
+                ret
+            }
+        };
+        let handle_machine = !delegated || (prev_priv_level == PrivilegeLevel::Machine);
+
+        if handle_machine {
+            self.handle_machine_trap(core, cause); 
+        } else {
+            self.handle_supervisor_trap(core, cause);
+        }
+    }
 }

@@ -4,7 +4,7 @@ use ihex::{Reader, Record};
 
 use crate::interpreter::{
     bus::Bus,
-    riscv_core::{Exception, InstructionType, RVCore}, virtual_memory::sv32::{AccessType, PhysicalAddress, translate_address},
+    riscv_core::{Exception, ExceptionType, InstructionType, RVCore, Trap}, virtual_memory::sv32::{AccessType, PhysicalAddress, translate_address},
 };
 
 mod bus;
@@ -22,6 +22,15 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
+    #[cfg(test)]
+    pub fn new_test(to_host: usize) -> Self {
+        Self {
+            bus: Bus::new_test(to_host),
+            core: RVCore::default(),
+        }
+    }
+
+    #[cfg(not(test))]
     pub fn new() -> Self {
         Self {
             bus: Bus::default(),
@@ -50,14 +59,31 @@ impl Interpreter {
         }
     }
 
+    pub fn load_bin(&mut self, path: &str) {
+        let mut file = File::open(path).unwrap();
+        let mut buf: Vec<u8> = Vec::new();
+
+
+        file.read_to_end(&mut buf).unwrap();
+
+        for (i, val) in buf.iter().enumerate() {
+            let _ = self.bus.write_byte(&PhysicalAddress(0x80000000u64 + i as u64), *val);
+        }
+    }
+
     pub fn fetch(&mut self) -> Result<u32, Exception> {
         let pc = self.core.pc;
         let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute)?;
 
+        // println!("{:#016X}", phys_pc.0);
+        if phys_pc.0 == 0x80002948 {
+            println!("TEST");
+        }
+
         let val = self
             .bus
             .read_aligned_word(&phys_pc)
-            .map_err(|_| Exception::InstructionAccessFault)?;
+            .map_err(|_| Exception::new(ExceptionType::InstructionAccessFault, pc))?;
 
         Ok(val)
     }
@@ -66,45 +92,16 @@ impl Interpreter {
         self.core.decode(instr)
     }
 
-    #[cfg(test)]
-    pub fn run(&mut self) {
-        loop {
-            let mut exception = None;
+    pub fn step(&mut self) -> Result<(), Exception> {
+        let fetched = self.fetch()?;
+        let mut instr = self.decode(fetched).ok_or(Exception::new(ExceptionType::IllegalInstruction, fetched))?;
 
-            if self.core.pc == 0x800001e8 {
-                println!("DEBUG");
-            }
+        instr.execute(&mut self.bus, &mut self.core)?;
 
-            if self.core.pc == 0x8000004c {
-                break;
-            }
+        self.core.control_and_status.increment_minstret();
+        self.core.pc = self.core.pc.wrapping_add(4);
 
-            let instr_bytes = self.fetch();
-            match instr_bytes {
-                Ok(fetched) => {
-                    let instr = self.decode(fetched);
-
-                    if let Some(mut instruction) = instr {
-                        let result = instruction
-                            .execute(&mut self.bus, &mut self.core)
-                            .map_err(|execution_exception| exception = Some(execution_exception));
-                        if result.is_ok() {
-                            self.core.control_and_status.increment_minstret();
-                            self.core.pc = self.core.pc.wrapping_add(4);
-                        }
-                    } else {
-                        exception = Some(Exception::IllegalInstruction(fetched))
-                    };
-                }
-                Err(fetch_exception) => exception = Some(fetch_exception),
-            }
-
-            if let Some(exc) = exception {
-                exc.trap(&mut self.core);
-            }
-
-        }
-        // println!("TEST");
+        Ok(())
     }
 
     #[cfg(test)]
@@ -117,34 +114,11 @@ impl Interpreter {
         u32::from_le_bytes([val_1, val_2, val_3, val_4])
     }
 
-    #[cfg(not(test))]
     pub fn run(&mut self) {
         loop {
-            let mut exception = None;
-
-            let instr_bytes = self.fetch();
-            match instr_bytes {
-                Ok(fetched) => {
-                    let instr = self.decode(fetched);
-
-                    if let Some(mut instruction) = instr {
-                        let result = instruction
-                            .execute(&mut self.bus, &mut self.core)
-                            .map_err(|execution_exception| exception = Some(execution_exception));
-                        if result.is_ok() {
-                            self.core.control_and_status.increment_minstret();
-                            self.core.pc = self.core.pc.wrapping_add(4);
-                        }
-                    } else {
-                        exception = Some(Exception::IllegalInstruction(fetched))
-                    };
-                }
-                Err(fetch_exception) => exception = Some(fetch_exception),
-            }
-
-            if let Some(exc) = exception {
-                exc.trap(&mut self.core);
-            }
+            if let Err(exception) = self.step() {
+                Trap::Exception(exception).handle(&mut self.core);
+            };
         }
     }
 }
