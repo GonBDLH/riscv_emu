@@ -195,7 +195,7 @@ fn translate(
                 ));
             }
 
-            if pte.get_a() || (access_type == AccessType::StoreAmo && pte.get_d()) {
+            if !pte.get_a() || (access_type == AccessType::StoreAmo && !pte.get_d()) {
                 let mut new_pte = PageTableEntry(bus.read_word(&PhysicalAddress(pte_addr as u64))?);
 
                 if new_pte.0 == pte.0 {

@@ -1,7 +1,7 @@
 use crate::interpreter::{
     bus::Bus,
     csr::Satp32,
-    riscv_core::{Exception, ExceptionType},
+    riscv_core::{Exception, ExceptionType, RVCore, Trap},
     virtual_memory::sv32::{
         LEVELS, PAGESIZE, PTESIZE, PageTableEntry, PhysicalAddress, VirtAddress,
     },
@@ -33,7 +33,7 @@ impl HitfState {
             fromhost,
             tohost_val: [0; 8],
             tohost_cnt: 0,
-            fromhost_val: [0; 8],
+            fromhost_val: [0x00; 8],
             fromhost_cnt: 0,
             hitf_size: 4,
         }
@@ -78,9 +78,10 @@ impl HitfState {
     }
 
     pub fn read_fromhost_byte(&self, address: usize) -> u8 {
-        let address = address - self.fromhost;
+        // let address = address - self.fromhost;
 
-        self.fromhost_val[address]
+        // self.fromhost_val[address]
+        0xFF
     }
 
     pub fn translate_sv32(satp: Satp32, bus: &Bus, virt_address: u32) -> Option<PhysicalAddress> {
@@ -128,6 +129,65 @@ impl HitfState {
 
         None
     }
+
+    pub fn syscall(exception: &Exception, core: &RVCore, bus: &Bus) {
+        let syscall_va = exception.get_val();
+
+        let mut phys_address = HitfState::translate_sv32(
+            core.control_and_status.read_satp_unchecked(),
+            bus,
+            syscall_va,
+        )
+        .unwrap();
+
+        let syscall_l = bus.read_word(&phys_address).unwrap() as u64;
+        phys_address.0 += 4;
+
+        let syscall_h = bus.read_word(&phys_address).unwrap() as u64;
+        phys_address.0 += 4;
+
+        let syscall_code = syscall_h << 32 | syscall_l;
+
+        match syscall_code & 0xFF {
+            0x40 => {
+                // WRITE
+                let fd_l = bus.read_word(&phys_address).unwrap() as u64;
+                phys_address.0 += 4;
+                let fd_h = bus.read_word(&phys_address).unwrap() as u64;
+                phys_address.0 += 4;
+                let fd = fd_h << 32 | fd_l;
+
+                let buff_l = bus.read_word(&phys_address).unwrap() as u64;
+                phys_address.0 += 4;
+                let buff_h = bus.read_word(&phys_address).unwrap() as u64;
+                phys_address.0 += 4;
+                let buff_va = buff_h << 32 | buff_l;
+                let buff_phys_address = HitfState::translate_sv32(
+                    core.control_and_status.read_satp_unchecked(),
+                    bus,
+                    buff_va as u32,
+                )
+                .unwrap();
+
+                let count_l = bus.read_word(&phys_address).unwrap() as u64;
+                phys_address.0 += 4;
+                let count_h = bus.read_word(&phys_address).unwrap() as u64;
+                // phys_address.0 += 4;
+                let count = count_h << 32 | count_l;
+
+                if fd == 1 {
+                    let start = buff_phys_address.0 as usize - 0x80000000;
+                    let end = (buff_phys_address.0 as usize + count as usize) - 0x80000000;
+                    let buff = &bus.dram[start..end];
+
+                    let str_buf = String::from_utf8_lossy(buff);
+                    print!("{}", str_buf);
+                }
+            }
+
+            _ => unimplemented!("{:08X}", syscall_code),
+        }
+    }
 }
 
 impl Hitf {
@@ -142,8 +202,6 @@ impl Hitf {
                 } else {
                     // SYSCALL
                     let syscall = self.data;
-
-                    // println!("SYSCALL {:08X}", addr.0);
 
                     return Err(Exception::new(ExceptionType::HitfSyscall, syscall as u32));
                 }

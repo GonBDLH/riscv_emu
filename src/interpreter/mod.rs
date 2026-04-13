@@ -147,7 +147,7 @@ impl Interpreter {
         let pc = self.core.pc;
         let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute)?;
 
-        if phys_pc.0 == 0x80002a0c {
+        if phys_pc.0 == 0x80002678 {
             println!("DBG");
         }
 
@@ -170,6 +170,8 @@ impl Interpreter {
     }
 
     pub fn step(&mut self) -> Result<(), Exception> {
+        #![allow(unreachable_code)]
+
         if self.core.stalled {
             return Ok(());
         }
@@ -182,6 +184,29 @@ impl Interpreter {
         if self.core.pc == 0x800001ac {
             println!("TEST");
         }
+
+        #[cfg(feature = "hitf")]
+        return {
+            let exc = instr.execute(&mut self.bus, &mut self.core);
+
+            if let Err(exc) = exc {
+                match exc.exc_type {
+                    ExceptionType::HitfSyscall => {
+                        self.core.control_and_status.increment_minstret();
+                        self.core.pc = self.core.pc.wrapping_add(instr.get_width());
+                    }
+                    
+                    _ => {}
+                }
+
+                Err(exc)
+            } else {
+                self.core.control_and_status.increment_minstret();
+                self.core.pc = self.core.pc.wrapping_add(instr.get_width());
+
+                Ok(())
+            }
+        };
 
         instr.execute(&mut self.bus, &mut self.core)?;
 
@@ -268,63 +293,7 @@ impl Interpreter {
                     }
                     #[cfg(feature = "hitf")]
                     ExceptionType::HitfSyscall => {
-                        let syscall_va = exception.get_val();
-
-                        let mut phys_address = HitfState::translate_sv32(
-                            self.core.control_and_status.read_satp_unchecked(),
-                            &self.bus,
-                            syscall_va,
-                        )
-                        .unwrap();
-
-                        let syscall_l = self.bus.read_word(&phys_address).unwrap() as u64;
-                        phys_address.0 += 4;
-
-                        let syscall_h = self.bus.read_word(&phys_address).unwrap() as u64;
-                        phys_address.0 += 4;
-
-                        let syscall_code = syscall_h << 32 | syscall_l;
-
-                        match syscall_code & 0xFF {
-                            0x40 => {
-                                // WRITE
-                                let fd_l = self.bus.read_word(&phys_address).unwrap() as u64;
-                                phys_address.0 += 4;
-                                let fd_h = self.bus.read_word(&phys_address).unwrap() as u64;
-                                phys_address.0 += 4;
-                                let fd = fd_h << 32 | fd_l;
-
-                                let buff_l = self.bus.read_word(&phys_address).unwrap() as u64;
-                                phys_address.0 += 4;
-                                let buff_h = self.bus.read_word(&phys_address).unwrap() as u64;
-                                phys_address.0 += 4;
-                                let buff_va = buff_h << 32 | buff_l;
-                                let buff_phys_address = HitfState::translate_sv32(
-                                    self.core.control_and_status.read_satp_unchecked(),
-                                    &self.bus,
-                                    buff_va as u32,
-                                )
-                                .unwrap();
-
-                                let count_l = self.bus.read_word(&phys_address).unwrap() as u64;
-                                phys_address.0 += 4;
-                                let count_h = self.bus.read_word(&phys_address).unwrap() as u64;
-                                phys_address.0 += 4;
-                                let count = count_h << 32 | count_l;
-
-                                if fd == 1 {
-                                    let start = buff_phys_address.0 as usize - 0x80000000;
-                                    let end = (buff_phys_address.0 as usize + count as usize)
-                                        - 0x80000000;
-                                    let buff = &self.bus.dram[start..end];
-
-                                    let str_buf = String::from_utf8_lossy(buff);
-                                    println!("{}", str_buf);
-                                }
-                            }
-
-                            _ => unimplemented!("{:08X}", syscall_code),
-                        }
+                        HitfState::syscall(&exception, &self.core, &self.bus);
                     }
                     _ => exception.handle(&mut self.core),
                 }
