@@ -1,17 +1,31 @@
 use std::{fs::File, io::Read};
 
+use elf::{ElfBytes, endian::LittleEndian};
 use ihex::{Reader, Record};
 
-use crate::interpreter::{
-    bus::Bus,
-    riscv_core::{Exception, ExceptionType, InstructionType, RVCore, Trap}, virtual_memory::sv32::{AccessType, PhysicalAddress, translate_address},
+#[cfg(feature = "hitf")]
+use crate::interpreter::hitf::{Hitf, HitfState};
+use crate::{
+    interpreter::{
+        bus::Bus,
+        csr::*,
+        riscv_core::{
+            Exception, ExceptionType, InstructionType, Interrupt, InterruptType, PrivilegeLevel,
+            RVCore, Trap,
+        },
+        virtual_memory::sv32::{AccessType, PhysicalAddress, translate_address},
+    },
+    peripherals::Peripheral,
 };
 
 mod bus;
 mod csr;
 mod extensions;
-mod virtual_memory;
 mod riscv_core;
+mod virtual_memory;
+
+#[cfg(feature = "hitf")]
+mod hitf;
 
 const NUM_HARTS: usize = 1;
 
@@ -19,15 +33,27 @@ const NUM_HARTS: usize = 1;
 pub struct Interpreter {
     pub bus: Bus,
     core: RVCore,
+
+    #[cfg(feature = "hitf")]
+    pub hitf: HitfState,
 }
 
 impl Interpreter {
     #[cfg(test)]
-    pub fn new_test(to_host: usize) -> Self {
-        Self {
-            bus: Bus::new_test(to_host),
+    pub fn new_test_elf(path: &str, hitf_size: u8) -> Self {
+        let mut interpreter = Self {
+            bus: Bus::default(),
             core: RVCore::default(),
-        }
+
+            #[cfg(feature = "hitf")]
+            hitf: HitfState::default(),
+        };
+
+        interpreter.load_elf(path);
+
+        interpreter.bus.hitf.hitf_size = hitf_size;
+
+        interpreter
     }
 
     #[cfg(not(test))]
@@ -35,6 +61,9 @@ impl Interpreter {
         Self {
             bus: Bus::default(),
             core: RVCore::default(),
+
+            #[cfg(feature = "hitf")]
+            hitf: HitfState::default(),
         }
     }
 
@@ -51,9 +80,10 @@ impl Interpreter {
 
             if let Record::Data { offset, value } = record {
                 value.iter().enumerate().for_each(|(add, val)| {
-                    let _ = self
-                        .bus
-                        .write_byte(&PhysicalAddress(0x80000000u64 + offset as u64 + add as u64), *val);
+                    let _ = self.bus.write_byte(
+                        &PhysicalAddress(0x80000000u64 + offset as u64 + add as u64),
+                        *val,
+                    );
                 });
             }
         }
@@ -63,11 +93,53 @@ impl Interpreter {
         let mut file = File::open(path).unwrap();
         let mut buf: Vec<u8> = Vec::new();
 
-
         file.read_to_end(&mut buf).unwrap();
 
         for (i, val) in buf.iter().enumerate() {
-            let _ = self.bus.write_byte(&PhysicalAddress(0x80000000u64 + i as u64), *val);
+            let _ = self
+                .bus
+                .write_byte(&PhysicalAddress(0x80000000u64 + i as u64), *val);
+        }
+    }
+
+    pub fn load_elf(&mut self, path: &str) {
+        let path_buf = std::path::PathBuf::from(path);
+        let file_data = std::fs::read(path_buf).expect("Could not read file.");
+        let slice = file_data.as_slice();
+        let file = ElfBytes::<LittleEndian>::minimal_parse(slice).expect("Bad format");
+
+        #[cfg(feature = "hitf")]
+        {
+            let tohost = file
+                .section_header_by_name(".tohost")
+                .expect("section table should be parseable")
+                .expect("file should have a .tohost section");
+
+            self.bus.hitf.tohost = tohost.sh_addr as usize;
+            self.bus.hitf.fromhost = tohost.sh_addr as usize + 0x40;
+
+            if path.contains("-v-") {
+                self.bus.hitf.hitf_size = 8;
+            } else {
+                self.bus.hitf.hitf_size = 4;
+            }
+        }
+
+        for phdr in file.segments().unwrap() {
+            if phdr.p_type == 1 {
+                // PT_LOAD
+                let data = file.segment_data(&phdr).unwrap();
+                let phys_address = phdr.p_paddr as usize;
+
+                self.bus.load_section(data, phys_address);
+
+                if phdr.p_filesz != phdr.p_memsz {
+                    self.bus.fill_zeros(
+                        phys_address + phdr.p_filesz as usize,
+                        phys_address + phdr.p_memsz as usize,
+                    );
+                }
+            }
         }
     }
 
@@ -75,33 +147,98 @@ impl Interpreter {
         let pc = self.core.pc;
         let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute)?;
 
-        // println!("{:#016X}", phys_pc.0);
-        if phys_pc.0 == 0x80002948 {
-            println!("TEST");
+        if phys_pc.0 == 0x80002a0c {
+            println!("DBG");
         }
 
         let val = self
             .bus
-            .read_aligned_word(&phys_pc)
+            .read_word(&phys_pc)
             .map_err(|_| Exception::new(ExceptionType::InstructionAccessFault, pc))?;
 
         Ok(val)
     }
 
     pub fn decode(&mut self, instr: u32) -> Option<InstructionType> {
-        self.core.decode(instr)
+        let width_bits = instr & 0b11;
+
+        if width_bits == 0b11 {
+            self.core.decode32(instr)
+        } else {
+            self.core.decode16(instr as u16)
+        }
     }
 
     pub fn step(&mut self) -> Result<(), Exception> {
+        if self.core.stalled {
+            return Ok(());
+        }
+
         let fetched = self.fetch()?;
-        let mut instr = self.decode(fetched).ok_or(Exception::new(ExceptionType::IllegalInstruction, fetched))?;
+        let instr = self
+            .decode(fetched)
+            .ok_or(Exception::new(ExceptionType::IllegalInstruction, fetched))?;
+
+        if self.core.pc == 0x800001ac {
+            println!("TEST");
+        }
 
         instr.execute(&mut self.bus, &mut self.core)?;
 
         self.core.control_and_status.increment_minstret();
-        self.core.pc = self.core.pc.wrapping_add(4);
+        self.core.pc = self.core.pc.wrapping_add(instr.get_width());
 
         Ok(())
+    }
+
+    pub fn update_peripherals(&mut self) {
+        if self.bus.timer.has_interrupt() {
+            self.core
+                .control_and_status
+                .set_mip_bit(InterruptType::MachineTimerInt as u32);
+        }
+
+        // TODO let uart_int = self.bus.uart.has_interrupt();
+    }
+
+    pub fn check_interrupt(&mut self) -> Option<Interrupt> {
+        let mip: u32 = self
+            .core
+            .control_and_status
+            .read_csr(MIP, PrivilegeLevel::Machine)
+            .unwrap();
+        let mie = self
+            .core
+            .control_and_status
+            .read_csr(MIE, PrivilegeLevel::Machine)
+            .unwrap();
+
+        let pending = mip & mie;
+
+        if pending == 0 {
+            return None;
+        }
+
+        // Prioridad: external > timer > software
+        let candidates = [
+            InterruptType::MachineExternalInt,
+            InterruptType::MachineSwInt,
+            InterruptType::MachineTimerInt,
+            InterruptType::SupervisorExternalInt,
+            InterruptType::SupervisorSwInt,
+            InterruptType::SupervisorTimerInt,
+            InterruptType::CounterOverflowInt,
+        ];
+
+        for int_type in candidates {
+            if self.core.check_int_to_m(int_type) {
+                return Some(Interrupt::new(int_type, false));
+            } else if self.core.check_int_to_s(int_type) {
+                return Some(Interrupt::new(int_type, true));
+            }
+        }
+
+        None
     }
 
     #[cfg(test)]
@@ -114,10 +251,80 @@ impl Interpreter {
         u32::from_le_bytes([val_1, val_2, val_3, val_4])
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> u32 {
         loop {
+            self.update_peripherals();
+
+            // TODO Check interrupts
+            if let Some(int) = self.check_interrupt() {
+                int.handle(&mut self.core);
+            }
+
             if let Err(exception) = self.step() {
-                Trap::Exception(exception).handle(&mut self.core);
+                match exception.exc_type {
+                    #[cfg(feature = "hitf")]
+                    ExceptionType::HitfExit => {
+                        return exception.get_val() >> 1;
+                    }
+                    #[cfg(feature = "hitf")]
+                    ExceptionType::HitfSyscall => {
+                        let syscall_va = exception.get_val();
+
+                        let mut phys_address = HitfState::translate_sv32(
+                            self.core.control_and_status.read_satp_unchecked(),
+                            &self.bus,
+                            syscall_va,
+                        ).unwrap();
+
+                        let syscall_l = self.bus.read_word(&phys_address).unwrap() as u64;
+                        phys_address.0 += 4;
+                    
+                        let syscall_h = self.bus.read_word(&phys_address).unwrap() as u64;
+                        phys_address.0 += 4;
+
+                        let syscall_code = syscall_h << 32 | syscall_l;
+
+                        match syscall_code & 0xFF {
+                            0x40 => {
+                                // WRITE
+                                let fd_l = self.bus.read_word(&phys_address).unwrap() as u64;
+                                phys_address.0 += 4;
+                                let fd_h = self.bus.read_word(&phys_address).unwrap() as u64;
+                                phys_address.0 += 4;
+                                let fd = fd_h << 32 | fd_l;
+
+                                let buff_l = self.bus.read_word(&phys_address).unwrap() as u64;
+                                phys_address.0 += 4;
+                                let buff_h = self.bus.read_word(&phys_address).unwrap() as u64;
+                                phys_address.0 += 4;
+                                let buff_va = buff_h << 32 | buff_l;
+                                let buff_phys_address = HitfState::translate_sv32(
+                                    self.core.control_and_status.read_satp_unchecked(),
+                                    &self.bus,
+                                    buff_va as u32,
+                                ).unwrap();
+
+                                let count_l = self.bus.read_word(&phys_address).unwrap() as u64;
+                                phys_address.0 += 4;
+                                let count_h = self.bus.read_word(&phys_address).unwrap() as u64;
+                                phys_address.0 += 4;
+                                let count = count_h << 32 | count_l;
+
+                                if fd == 1 {
+                                    let start = buff_phys_address.0 as usize - 0x80000000;
+                                    let end = (buff_phys_address.0 as usize + count as usize) - 0x80000000;
+                                    let buff = &self.bus.dram[start..end];
+
+                                    let str_buf = String::from_utf8_lossy(buff);
+                                    println!("{}", str_buf);
+                                }
+                            }
+
+                            _ => unimplemented!("{:08X}", syscall_code)
+                        }
+                    }
+                    _ => exception.handle(&mut self.core),
+                }
             };
         }
     }

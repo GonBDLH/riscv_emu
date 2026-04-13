@@ -2,3 +2,7 @@
 /.vscode
 
 /bin
+
+/riscof_tests
+/fw
+/elf_tests

@@ -10,6 +10,8 @@ use std::{
     thread,
 };
 
+use crate::peripherals::Peripheral;
+
 const UART_RHR_THR: usize = 0; 
 const UART_LSR: usize = 5;
 
@@ -22,8 +24,8 @@ pub struct Uart16550 {
     interrupt: Arc<AtomicBool>,
 }
 
-impl Uart16550 {
-    pub fn new() -> Self {
+impl Peripheral for Uart16550 {
+    fn new() -> Self {
         let regs = Arc::new((Mutex::new([0; 0x1000]), Condvar::new()));
         let interrupt = Arc::new(AtomicBool::new(false));
 
@@ -58,11 +60,11 @@ impl Uart16550 {
         Self { regs, interrupt }
     }
 
-    pub fn has_interrupt(&self) -> bool {
+    fn has_interrupt(&mut self) -> bool {
         self.interrupt.swap(false, Ordering::Acquire)
     }
 
-    pub fn read(&self, address: usize) -> u8 {
+    fn read_byte(&self, address: usize) -> u8 {
         let (regs, cvar) = &*self.regs;
         let mut regs = regs.lock().expect("Mutex envenendado");
         match address {
@@ -75,14 +77,15 @@ impl Uart16550 {
         }
     }
 
-    pub fn write(&mut self, address: usize, val: u8) {
-        println!("{:08X} {:08X}", address, val);
+    fn write_byte(&mut self, address: usize, val: u8) {
+        // println!("{:08X} {:08X}", address, val);
 
         let (regs, _cvar) = &*self.regs;
         let mut regs = regs.lock().expect("Mutex envenendado");
         match address {
             UART_RHR_THR => {
-                print!("{}", val as char);
+                // print!("{}", val as char);
+                println!("{}", val);
                 io::stdout().flush().expect("Fallo al limpiar stdout");
             },
             _ => regs[address] = val

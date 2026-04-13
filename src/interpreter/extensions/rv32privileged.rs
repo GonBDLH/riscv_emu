@@ -74,11 +74,22 @@ pub fn sret(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), 
 }
 
 pub fn sfence_vma(instr: &IInstruction, _: &mut Bus, core: &mut RVCore)  -> Result<(), Exception> { 
-    let mstatus = core.control_and_status.read_mstatus(core.privilege_level).expect("Puede que esto no vaya asi");
+    let mstatus = core.control_and_status.read_mstatus_unchecked();
 
     if mstatus.get_tvm() {
         return Err(Exception::new(ExceptionType::IllegalInstruction, instr.data));
     }
+
+    Ok(())
+}
+
+pub fn wfi(instr: &IInstruction, _: &mut Bus, core: &mut RVCore)  -> Result<(), Exception> {
+    let mstatus = core.control_and_status.read_mstatus_unchecked();
+    if mstatus.get_tw() && core.privilege_level != PrivilegeLevel::Machine {
+        return Err(Exception::new(ExceptionType::IllegalInstruction, instr.data));
+    }
+
+    // core.stalled = true;
 
     Ok(())
 }

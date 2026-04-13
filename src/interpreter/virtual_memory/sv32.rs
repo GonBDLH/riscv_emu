@@ -1,12 +1,12 @@
 use crate::interpreter::{
-    bus::Bus, csr::MStatus, riscv_core::{Exception, ExceptionType, PrivilegeLevel, RVCore}
+    bus::Bus, riscv_core::{Exception, ExceptionType, PrivilegeLevel, RVCore}
 };
 
 use bitfield::bitfield;
 
-const PAGESIZE: u32 = 2u32.pow(12);
-const LEVELS: u32 = 2;
-const PTESIZE: u32 = 4;
+pub const PAGESIZE: u32 = 2u32.pow(12);
+pub const LEVELS: u32 = 2;
+pub const PTESIZE: u32 = 4;
 
 #[derive(PartialEq)]
 pub enum AccessType {

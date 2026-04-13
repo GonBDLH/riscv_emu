@@ -11,13 +11,13 @@ const MIMPID: usize = 0xF13;
 pub const MHARTID: usize = 0xF14;
 // TRAP SETUP
 pub const MSTATUS: usize = 0x300;
-const MSTATUS_MASK: u32 = 0x81FFFFEA;
-const MISA: usize = 0x301;
+const MSTATUS_MASK: u32 = 0x007E19AA;
+pub const MISA: usize = 0x301;
 const MISA_MASK_WRITE: u32 = 0b00000000000101000001000100000001;
 pub const MEDELEG: usize = 0x302;
 pub const MIDELEG: usize = 0x303;
-const MIE: usize = 0x304;
-const MIE_MASK: u32 = 0xFFFF2AAA;
+pub const MIE: usize = 0x304;
+const MIE_MASK: u32 = 0x00002AAA;
 pub const MTVEC: usize = 0x305;
 const MCOUNTEREN: usize = 0x306;
 pub const MSTATUSH: usize = 0x310;
@@ -28,8 +28,8 @@ const MSCRATCH: usize = 0x340;
 pub const MEPC: usize = 0x341;
 pub const MCAUSE: usize = 0x342;
 pub const MTVAL: usize = 0x343;
-const MIP: usize = 0x344;
-const MIP_MASK: u32 = 0xFFFF2AAA;
+pub const MIP: usize = 0x344;
+const MIP_MASK: u32 = 0x00002AAA;
 const MTINST: usize = 0x34A;
 const MTVAL2: usize = 0x34B;
 // COUNTER/TIMERS
@@ -47,8 +47,8 @@ const TSELECT: usize = 0x7A0;
  * SUPERVISOR
  */
 pub const SSTATUS: usize = 0x100;
-const SSTATUS_MASK: u32 = 0x818DE762;
-const SIE: usize = 0x104;
+const SSTATUS_MASK: u32 = 0x000C0122;
+pub const SIE: usize = 0x104;
 const SIE_MASK: u32 = 0xFFFF2222;
 pub const STVEC: usize = 0x105;
 const SCOUNTEREN: usize = 0x106;
@@ -78,6 +78,7 @@ impl ControlAndStatus {
         misa |= 1 << 18; // Supervisor ISA
         misa |= 1 << 12; // RV31M
         misa |= 1 << 8; // RV32I
+        misa |= 1 << 2; // RVC
         misa |= 1; // RV32A
 
         csrs[MISA] = misa;
@@ -125,6 +126,10 @@ impl ControlAndStatus {
         };
 
         Ok(val)
+    }
+
+    pub fn read_misa_unchecked(&self) -> u32 {
+        self.csrs[MISA]
     }
 
     // ATENCION SOLO USAR EN TRAPS
@@ -215,6 +220,10 @@ impl ControlAndStatus {
 
         self.csrs[MINSTRET] = new_minstret as u32;
         self.csrs[MINSTRETH] = (new_minstret >> 32) as u32;
+    }
+
+    pub fn set_mip_bit(&mut self, bit: u32) {
+        self.csrs[MIP] |= 1 << bit;
     }
 }
 
