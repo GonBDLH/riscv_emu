@@ -3,16 +3,17 @@
 // SACADO DE: https://github.com/d0iasm/rvemu
 
 use std::{
-    io::{self, stdin, Read, Write},
+    io::{self, Read, Write, stdin},
     sync::{
-        atomic::{AtomicBool, Ordering}, Arc, Condvar, Mutex
+        Arc, Condvar, Mutex,
+        atomic::{AtomicBool, Ordering},
     },
     thread,
 };
 
 use crate::peripherals::Peripheral;
 
-const UART_RHR_THR: usize = 0; 
+const UART_RHR_THR: usize = 0;
 const UART_LSR: usize = 5;
 
 const UART_LSR_RX: u8 = 1;
@@ -73,7 +74,7 @@ impl Peripheral for Uart16550 {
                 regs[UART_LSR] &= !UART_LSR_RX;
                 regs[UART_RHR_THR]
             }
-            _ => regs[address]
+            _ => regs[address],
         }
     }
 
@@ -87,8 +88,8 @@ impl Peripheral for Uart16550 {
                 // print!("{}", val as char);
                 println!("{}", val);
                 io::stdout().flush().expect("Fallo al limpiar stdout");
-            },
-            _ => regs[address] = val
+            }
+            _ => regs[address] = val,
         }
     }
 }

@@ -5,7 +5,11 @@ use std::collections::HashSet;
 #[cfg(feature = "hitf")]
 use crate::interpreter::hitf::HitfState;
 use crate::{
-    interpreter::{NUM_HARTS, riscv_core::{Exception, ExceptionType}, virtual_memory::sv32::{PhysicalAddress}},
+    interpreter::{
+        NUM_HARTS,
+        riscv_core::{Exception, ExceptionType},
+        virtual_memory::sv32::PhysicalAddress,
+    },
     peripherals::{Peripheral, timer::RealTimeCounter, uart_16550::Uart16550},
 };
 
@@ -33,7 +37,7 @@ pub struct Bus {
     pub timer: RealTimeCounter,
 
     #[cfg(feature = "hitf")]
-    pub hitf: HitfState, 
+    pub hitf: HitfState,
 
     // PARA RV32A
     reserved_addresses: [HashSet<usize>; NUM_HARTS],
@@ -49,7 +53,7 @@ impl Default for Bus {
             reserved_addresses: [HashSet::new(); NUM_HARTS],
 
             #[cfg(feature = "hitf")]
-            hitf: HitfState::default()
+            hitf: HitfState::default(),
         }
     }
 }
@@ -66,12 +70,11 @@ impl Bus {
                 }
                 #[cfg(feature = "hitf")]
                 if address >= self.hitf.fromhost && address < (self.hitf.fromhost + 8) {
-                    return Ok(self.hitf.read_fromhost_byte(address))
+                    return Ok(self.hitf.read_fromhost_byte(address));
                 }
 
-
                 Ok(self.dram[address - DRAM_BASE])
-            } 
+            }
             ROM_BASE..ROM_END => Ok(self.rom[address - ROM_BASE]),
             UART_BASE..UART_END => Ok(self.uart.read_byte(address - UART_BASE)),
             RTC_BASE..RTC_END => Ok(self.timer.read_byte(address - RTC_BASE)),
@@ -93,7 +96,8 @@ impl Bus {
                 }
                 #[cfg(feature = "hitf")]
                 if address >= self.hitf.fromhost && address < (self.hitf.fromhost + 8) {
-                    self.hitf.write_fromhost_byte(address - self.hitf.fromhost, val);
+                    self.hitf
+                        .write_fromhost_byte(address - self.hitf.fromhost, val);
                 }
 
                 self.dram[address - DRAM_BASE] = val;
@@ -152,7 +156,11 @@ impl Bus {
         Ok(u16::from_le_bytes([val_0, val_1]))
     }
 
-    pub fn write_aligned_half_word(&mut self, phys_address: &PhysicalAddress, half_word: u16) -> Result<(), Exception> {
+    pub fn write_aligned_half_word(
+        &mut self,
+        phys_address: &PhysicalAddress,
+        half_word: u16,
+    ) -> Result<(), Exception> {
         if phys_address.0 % 2 != 0 {
             return Err(Exception::new(ExceptionType::StoreAmoAddressMisaligned, 0));
         }
@@ -164,7 +172,11 @@ impl Bus {
         Ok(())
     }
 
-    pub fn write_aligned_word(&mut self, phys_address: &PhysicalAddress, word: u32) -> Result<(), Exception> {
+    pub fn write_aligned_word(
+        &mut self,
+        phys_address: &PhysicalAddress,
+        word: u32,
+    ) -> Result<(), Exception> {
         if phys_address.0 % 4 != 0 {
             return Err(Exception::new(ExceptionType::StoreAmoAddressMisaligned, 0));
         }
@@ -195,7 +207,7 @@ impl Bus {
     pub fn load_section(&mut self, data: &[u8], start: usize) {
         assert!(start >= DRAM_BASE, "Invalid address");
         assert!(start + data.len() <= DRAM_END, "Segment too big");
-        
+
         let offset = start - DRAM_BASE;
         let end = offset + data.len();
 
@@ -208,7 +220,7 @@ impl Bus {
 
         let offset_start = start - DRAM_BASE;
         let offset_end = end - DRAM_BASE;
-        
+
         self.dram[offset_start..offset_end].fill(0);
-    } 
+    }
 }

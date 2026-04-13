@@ -1,7 +1,11 @@
 use crate::interpreter::{
-    bus::Bus, extensions::{sign_extend16to32, sign_extend32to32}, riscv_core::{
-        CAInstruction, CBInstruction, CIInstruction, CIWInstruction, CJInstruction, CLInstruction, CRInstruction, CSInstruction, CSSInstruction, Exception, RVCore, WithErrVal
-    }, virtual_memory::sv32::{AccessType, translate_address}
+    bus::Bus,
+    extensions::{sign_extend16to32, sign_extend32to32},
+    riscv_core::{
+        CAInstruction, CBInstruction, CIInstruction, CIWInstruction, CJInstruction, CLInstruction,
+        CRInstruction, CSInstruction, CSSInstruction, Exception, RVCore, WithErrVal,
+    },
+    virtual_memory::sv32::{AccessType, translate_address},
 };
 
 pub fn c_lwsp(instr: &CIInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
@@ -38,7 +42,9 @@ pub fn c_lw(instr: &CLInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(
     let offset6 = instr.imm6_5 & 0b1;
     let offset = (offset6 << 6) | (offset5_3 << 3) | (offset2 << 2);
 
-    let address = core.read_reg(instr.rs1_p as u32 + 8).wrapping_add(offset as u32);
+    let address = core
+        .read_reg(instr.rs1_p as u32 + 8)
+        .wrapping_add(offset as u32);
     let phys_address = translate_address(core, bus, address, AccessType::Load)?;
 
     let val = bus.read_aligned_word(&phys_address)?;
@@ -54,7 +60,9 @@ pub fn c_sw(instr: &CSInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(
     let offset6 = instr.imm6_5 & 0b1;
     let offset = (offset6 << 6) | (offset5_3 << 3) | (offset2 << 2);
 
-    let address = core.read_reg(instr.rs1_p as u32 + 8).wrapping_add(offset as u32);
+    let address = core
+        .read_reg(instr.rs1_p as u32 + 8)
+        .wrapping_add(offset as u32);
     let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
     bus.write_aligned_word(&phys_address, core.read_reg(instr.rs2_p as u32 + 8))?;
@@ -140,14 +148,13 @@ pub fn c_beqz(instr: &CBInstruction, core: &mut RVCore) -> Result<(), Exception>
     let offset5 = instr.offset6_2 & 0b1;
     let jump_target =
         (offset8 << 8) | (offset7_6 << 6) | (offset5 << 5) | (offset4_3 << 3) | (offset2_1 << 1);
-    
+
     let sign_extended = sign_extend16to32(jump_target, 9);
     let val = core.pc.wrapping_add(sign_extended);
 
     if core.read_reg(instr.rd_rs1_p as u32 + 8) == 0 {
         core.pc = val.wrapping_sub(2);
     }
-    
 
     Ok(())
 }
@@ -160,14 +167,13 @@ pub fn c_benz(instr: &CBInstruction, core: &mut RVCore) -> Result<(), Exception>
     let offset5 = instr.offset6_2 & 0b1;
     let jump_target =
         (offset8 << 8) | (offset7_6 << 6) | (offset5 << 5) | (offset4_3 << 3) | (offset2_1 << 1);
-    
+
     let sign_extended = sign_extend16to32(jump_target, 9);
     let val = core.pc.wrapping_add(sign_extended);
 
     if core.read_reg(instr.rd_rs1_p as u32 + 8) != 0 {
         core.pc = val.wrapping_sub(2);
     }
-    
 
     Ok(())
 }
@@ -196,7 +202,9 @@ pub fn c_addi(instr: &CIInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(
     let imm = (instr.imm12 << 5) | (instr.imm6_2);
     let sign_extended = sign_extend16to32(imm, 6);
 
-    let val = core.read_reg(instr.rd_rs1 as u32).wrapping_add(sign_extended);
+    let val = core
+        .read_reg(instr.rd_rs1 as u32)
+        .wrapping_add(sign_extended);
 
     core.write_reg(instr.rd_rs1 as u32, val);
 
@@ -207,7 +215,6 @@ pub fn c_nop(_: &CIInstruction, _: &mut Bus, _: &mut RVCore) -> Result<(), Excep
     Ok(())
 }
 
-
 pub fn c_addi16sp(instr: &CIInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let nzimm9 = instr.imm12;
     let nzimm4 = (instr.imm6_2 >> 4) & 0b1;
@@ -215,7 +222,7 @@ pub fn c_addi16sp(instr: &CIInstruction, _: &mut Bus, core: &mut RVCore) -> Resu
     let nzimm8_7 = (instr.imm6_2 >> 1) & 0b11;
     let nzimm5 = instr.imm6_2 & 0b1;
     let nzimm = (nzimm9 << 9) | (nzimm8_7 << 7) | (nzimm6 << 6) | (nzimm5 << 5) | (nzimm4 << 4);
-     
+
     let sign_extended = sign_extend16to32(nzimm, 10);
 
     let val = core.read_reg(2);
@@ -262,7 +269,7 @@ pub fn c_srai(instr: &CBInstruction, core: &mut RVCore) -> Result<(), Exception>
     let val = (core.read_reg(instr.rd_rs1_p as u32 + 8) as i32).wrapping_shr(shamt as u32) as u32;
 
     core.write_reg(instr.rd_rs1_p as u32 + 8, val);
-    
+
     Ok(())
 }
 

@@ -1,75 +1,75 @@
 use crate::interpreter::riscv_core::{Exception, ExceptionType, PrivilegeLevel};
 use bitfield::bitfield;
 
-/*
- * MACHINE CRS
- */
-// INFORMATION
-const MVENDORID: usize = 0xF11;
-const MARCHID: usize = 0xF12;
-const MIMPID: usize = 0xF13;
-pub const MHARTID: usize = 0xF14;
-// TRAP SETUP
-pub const MSTATUS: usize = 0x300;
-const MSTATUS_MASK: u32 = 0x007E19AA;
-pub const MISA: usize = 0x301;
-const MISA_MASK_WRITE: u32 = 0b00000000000101000001000100000001;
-pub const MEDELEG: usize = 0x302;
-pub const MIDELEG: usize = 0x303;
-pub const MIE: usize = 0x304;
-const MIE_MASK: u32 = 0x00002AAA;
-pub const MTVEC: usize = 0x305;
-const MCOUNTEREN: usize = 0x306;
-pub const MSTATUSH: usize = 0x310;
-const MSTATUSH_MASK: u32 = 0x6F0;
-pub const MEDELEGH: usize = 0x312;
-// TRAP HANDLING
-const MSCRATCH: usize = 0x340;
-pub const MEPC: usize = 0x341;
-pub const MCAUSE: usize = 0x342;
-pub const MTVAL: usize = 0x343;
-pub const MIP: usize = 0x344;
-const MIP_MASK: u32 = 0x00002AAA;
-const MTINST: usize = 0x34A;
-const MTVAL2: usize = 0x34B;
-// COUNTER/TIMERS
-const MCYCLE: usize = 0xB00;
-const MINSTRET: usize = 0xB02;
-const MHPCOUNTER3: usize = 0xB03; // MAX 31 (-3)
-const MCYCLEH: usize = 0xB80;
-const MINSTRETH: usize = 0xB82;
-const MHPCOUNTERH3: usize = 0xB83; // MAX 31 (-3)
-
-// DEBUG
-const TSELECT: usize = 0x7A0;
-
-/*
- * SUPERVISOR
- */
-pub const SSTATUS: usize = 0x100;
-const SSTATUS_MASK: u32 = 0x000C0122;
-pub const SIE: usize = 0x104;
-const SIE_MASK: u32 = 0xFFFF2222;
-pub const STVEC: usize = 0x105;
-const SCOUNTEREN: usize = 0x106;
-const SSCRATCH: usize = 0x140;
-pub const SEPC: usize = 0x141;
-pub const SCAUSE: usize = 0x142;
-pub const STVAL: usize = 0x143;
-pub const SIP: usize = 0x144;
-const SIP_MASK: u32 = 0xFFFF2222;
-
-pub const SATP: usize = 0x180;
-
 pub struct ControlAndStatus {
     csrs: [u32; 4096],
     // mstatus: MStatus,
     // satp: Satp32,
-
     minstret_loaded: bool,
 }
 
+#[expect(unused)]
 impl ControlAndStatus {
+    /*
+     * MACHINE CRS
+     */
+    // INFORMATION
+    const MVENDORID: usize = 0xF11;
+    const MARCHID: usize = 0xF12;
+    const MIMPID: usize = 0xF13;
+    pub const MHARTID: usize = 0xF14;
+    // TRAP SETUP
+    pub const MSTATUS: usize = 0x300;
+    const MSTATUS_MASK: u32 = 0x007E19AA;
+    pub const MISA: usize = 0x301;
+    const MISA_MASK_WRITE: u32 = 0b00000000000101000001000100000001;
+    pub const MEDELEG: usize = 0x302;
+    pub const MIDELEG: usize = 0x303;
+    pub const MIE: usize = 0x304;
+    const MIE_MASK: u32 = 0x00002AAA;
+    pub const MTVEC: usize = 0x305;
+    const MCOUNTEREN: usize = 0x306;
+    pub const MSTATUSH: usize = 0x310;
+    const MSTATUSH_MASK: u32 = 0x6F0;
+    pub const MEDELEGH: usize = 0x312;
+    // TRAP HANDLING
+    const MSCRATCH: usize = 0x340;
+    pub const MEPC: usize = 0x341;
+    pub const MCAUSE: usize = 0x342;
+    pub const MTVAL: usize = 0x343;
+    pub const MIP: usize = 0x344;
+    const MIP_MASK: u32 = 0x00002AAA;
+    const MTINST: usize = 0x34A;
+    const MTVAL2: usize = 0x34B;
+    // COUNTER/TIMERS
+    const MCYCLE: usize = 0xB00;
+    const MINSTRET: usize = 0xB02;
+    const MHPCOUNTER3: usize = 0xB03; // MAX 31 (-3)
+    const MCYCLEH: usize = 0xB80;
+    const MINSTRETH: usize = 0xB82;
+    const MHPCOUNTERH3: usize = 0xB83; // MAX 31 (-3)
+
+    // DEBUG
+    const TSELECT: usize = 0x7A0;
+
+    /*
+     * SUPERVISOR
+     */
+    pub const SSTATUS: usize = 0x100;
+    const SSTATUS_MASK: u32 = 0x000C0122;
+    pub const SIE: usize = 0x104;
+    const SIE_MASK: u32 = 0xFFFF2222;
+    pub const STVEC: usize = 0x105;
+    const SCOUNTEREN: usize = 0x106;
+    const SSCRATCH: usize = 0x140;
+    pub const SEPC: usize = 0x141;
+    pub const SCAUSE: usize = 0x142;
+    pub const STVAL: usize = 0x143;
+    pub const SIP: usize = 0x144;
+    const SIP_MASK: u32 = 0xFFFF2222;
+
+    pub const SATP: usize = 0x180;
+
     pub fn new(hart_id: u32) -> Self {
         let mut csrs = [0u32; 4096];
 
@@ -81,9 +81,9 @@ impl ControlAndStatus {
         misa |= 1 << 2; // RVC
         misa |= 1; // RV32A
 
-        csrs[MISA] = misa;
+        csrs[Self::MISA] = misa;
 
-        csrs[MHARTID] = hart_id;
+        csrs[Self::MHARTID] = hart_id;
 
         Self {
             csrs,
@@ -102,24 +102,24 @@ impl ControlAndStatus {
         // let val = self.csrs[csr as usize];
         let val = match csr {
             // MSTATUS => self.mstatus.0,
-            MSTATUS => self.csrs[MSTATUS] & MSTATUS_MASK,
-            MSTATUSH => self.csrs[MSTATUSH] & MSTATUSH_MASK,
-            MIP => self.csrs[MIP] & MIP_MASK,
-            MIE => self.csrs[MIE] & MIE_MASK,
-            TSELECT => u32::MAX, // TODO Cambiar si se incluye el modo debug
+            Self::MSTATUS => self.csrs[Self::MSTATUS] & Self::MSTATUS_MASK,
+            Self::MSTATUSH => self.csrs[Self::MSTATUSH] & Self::MSTATUSH_MASK,
+            Self::MIP => self.csrs[Self::MIP] & Self::MIP_MASK,
+            Self::MIE => self.csrs[Self::MIE] & Self::MIE_MASK,
+            Self::TSELECT => u32::MAX, // TODO Cambiar si se incluye el modo debug
 
-            SSTATUS => self.csrs[MSTATUS] & SSTATUS_MASK,
-            SIP => self.csrs[MIP] & SIP_MASK,
-            SIE => self.csrs[MIE] & SIE_MASK,
+            Self::SSTATUS => self.csrs[Self::MSTATUS] & Self::SSTATUS_MASK,
+            Self::SIP => self.csrs[Self::MIP] & Self::SIP_MASK,
+            Self::SIE => self.csrs[Self::MIE] & Self::SIE_MASK,
 
-            SATP => {
+            Self::SATP => {
                 let mstatus = self.read_mstatus_unchecked();
 
                 if mstatus.get_tvm() {
                     return Err(Exception::new(ExceptionType::IllegalInstruction, 0));
                 }
 
-                self.csrs[SATP]
+                self.csrs[Self::SATP]
             }
 
             _ => self.csrs[csr],
@@ -129,33 +129,33 @@ impl ControlAndStatus {
     }
 
     pub fn read_misa_unchecked(&self) -> u32 {
-        self.csrs[MISA]
+        self.csrs[Self::MISA]
     }
 
     // ATENCION SOLO USAR EN TRAPS
     pub fn read_mstatus_unchecked(&self) -> MStatus {
-        MStatus(self.csrs[MSTATUS] & MSTATUS_MASK)
+        MStatus(self.csrs[Self::MSTATUS] & Self::MSTATUS_MASK)
     }
 
     // ATENCION SOLO USAR EN TRAPS
     pub fn read_sstatus_unchecked(&self) -> SStatus {
-        SStatus(self.csrs[MSTATUS] & SSTATUS_MASK)
+        SStatus(self.csrs[Self::MSTATUS] & Self::SSTATUS_MASK)
     }
 
     // ATENCION SOLO USAR EN TRAPS
     pub fn read_satp_unchecked(&self) -> Satp32 {
-        Satp32(self.csrs[SATP])
+        Satp32(self.csrs[Self::SATP])
     }
 
     pub fn read_mstatus(&self, priv_level: PrivilegeLevel) -> Result<MStatus, Exception> {
-        let csr = self.read_csr(MSTATUS, priv_level)?;
+        let csr = self.read_csr(Self::MSTATUS, priv_level)?;
 
         Ok(MStatus(csr))
     }
 
     // ATENCION SOLO USAR EN TRAPS
     pub fn read_sstatus(&self, priv_level: PrivilegeLevel) -> Result<SStatus, Exception> {
-        let csr = self.read_csr(SSTATUS, priv_level)?;
+        let csr = self.read_csr(Self::SSTATUS, priv_level)?;
 
         Ok(SStatus(csr))
     }
@@ -180,24 +180,30 @@ impl ControlAndStatus {
         }
 
         match csr {
-            MSTATUS => self.csrs[MSTATUS] = MSTATUS_MASK & val,
-            MINSTRET | MINSTRETH => {
+            Self::MSTATUS => self.csrs[Self::MSTATUS] = Self::MSTATUS_MASK & val,
+            Self::MINSTRET | Self::MINSTRETH => {
                 self.minstret_loaded = true;
                 self.csrs[csr] = val;
             }
-            MEPC => self.csrs[MEPC] = val & 0xFFFFFFFC,
-            MISA => self.csrs[MISA] = (self.csrs[MISA] & !MISA_MASK_WRITE) | (val & MISA_MASK_WRITE),
+            Self::MEPC => self.csrs[Self::MEPC] = val & 0xFFFFFFFC,
+            Self::MISA => {
+                self.csrs[Self::MISA] =
+                    (self.csrs[Self::MISA] & !Self::MISA_MASK_WRITE) | (val & Self::MISA_MASK_WRITE)
+            }
 
-            SSTATUS => self.csrs[MSTATUS] = (self.csrs[MSTATUS] & !SSTATUS_MASK) | (val & SSTATUS_MASK),
+            Self::SSTATUS => {
+                self.csrs[Self::MSTATUS] =
+                    (self.csrs[Self::MSTATUS] & !Self::SSTATUS_MASK) | (val & Self::SSTATUS_MASK)
+            }
 
-            SATP => {
+            Self::SATP => {
                 let mstatus = self.read_mstatus_unchecked();
 
                 if mstatus.get_tvm() {
                     return Err(Exception::new(ExceptionType::IllegalInstruction, 0));
                 }
 
-                self.csrs[SATP] = val;
+                self.csrs[Self::SATP] = val;
             }
 
             _ => self.csrs[csr] = val,
@@ -212,18 +218,18 @@ impl ControlAndStatus {
             return;
         }
 
-        let minstret = self.csrs[MINSTRET];
-        let minstreth = self.csrs[MINSTRETH];
+        let minstret = self.csrs[Self::MINSTRET];
+        let minstreth = self.csrs[Self::MINSTRETH];
 
         let minsret_64 = (minstret as u64) + ((minstreth as u64) << 32);
         let new_minstret = minsret_64.wrapping_add(1);
 
-        self.csrs[MINSTRET] = new_minstret as u32;
-        self.csrs[MINSTRETH] = (new_minstret >> 32) as u32;
+        self.csrs[Self::MINSTRET] = new_minstret as u32;
+        self.csrs[Self::MINSTRETH] = (new_minstret >> 32) as u32;
     }
 
     pub fn set_mip_bit(&mut self, bit: u32) {
-        self.csrs[MIP] |= 1 << bit;
+        self.csrs[Self::MIP] |= 1 << bit;
     }
 }
 

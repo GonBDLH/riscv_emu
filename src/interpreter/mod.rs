@@ -4,11 +4,11 @@ use elf::{ElfBytes, endian::LittleEndian};
 use ihex::{Reader, Record};
 
 #[cfg(feature = "hitf")]
-use crate::interpreter::hitf::{Hitf, HitfState};
+use crate::interpreter::hitf::HitfState;
 use crate::{
     interpreter::{
         bus::Bus,
-        csr::*,
+        csr::ControlAndStatus,
         riscv_core::{
             Exception, ExceptionType, InstructionType, Interrupt, InterruptType, PrivilegeLevel,
             RVCore, Trap,
@@ -205,12 +205,12 @@ impl Interpreter {
         let mip: u32 = self
             .core
             .control_and_status
-            .read_csr(MIP, PrivilegeLevel::Machine)
+            .read_csr(ControlAndStatus::MIP, PrivilegeLevel::Machine)
             .unwrap();
         let mie = self
             .core
             .control_and_status
-            .read_csr(MIE, PrivilegeLevel::Machine)
+            .read_csr(ControlAndStatus::MIE, PrivilegeLevel::Machine)
             .unwrap();
 
         let pending = mip & mie;
@@ -274,11 +274,12 @@ impl Interpreter {
                             self.core.control_and_status.read_satp_unchecked(),
                             &self.bus,
                             syscall_va,
-                        ).unwrap();
+                        )
+                        .unwrap();
 
                         let syscall_l = self.bus.read_word(&phys_address).unwrap() as u64;
                         phys_address.0 += 4;
-                    
+
                         let syscall_h = self.bus.read_word(&phys_address).unwrap() as u64;
                         phys_address.0 += 4;
 
@@ -302,7 +303,8 @@ impl Interpreter {
                                     self.core.control_and_status.read_satp_unchecked(),
                                     &self.bus,
                                     buff_va as u32,
-                                ).unwrap();
+                                )
+                                .unwrap();
 
                                 let count_l = self.bus.read_word(&phys_address).unwrap() as u64;
                                 phys_address.0 += 4;
@@ -312,7 +314,8 @@ impl Interpreter {
 
                                 if fd == 1 {
                                     let start = buff_phys_address.0 as usize - 0x80000000;
-                                    let end = (buff_phys_address.0 as usize + count as usize) - 0x80000000;
+                                    let end = (buff_phys_address.0 as usize + count as usize)
+                                        - 0x80000000;
                                     let buff = &self.bus.dram[start..end];
 
                                     let str_buf = String::from_utf8_lossy(buff);
@@ -320,7 +323,7 @@ impl Interpreter {
                                 }
                             }
 
-                            _ => unimplemented!("{:08X}", syscall_code)
+                            _ => unimplemented!("{:08X}", syscall_code),
                         }
                     }
                     _ => exception.handle(&mut self.core),

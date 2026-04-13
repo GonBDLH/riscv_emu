@@ -712,15 +712,15 @@ impl RVCore {
         let mstatus = self.control_and_status.read_mstatus_unchecked();
         let mip = self
             .control_and_status
-            .read_csr(MIP, PrivilegeLevel::Machine)
+            .read_csr(ControlAndStatus::MIP, PrivilegeLevel::Machine)
             .unwrap();
         let mie = self
             .control_and_status
-            .read_csr(MIE, PrivilegeLevel::Machine)
+            .read_csr(ControlAndStatus::MIE, PrivilegeLevel::Machine)
             .unwrap();
         let mideleg = self
             .control_and_status
-            .read_csr(MIDELEG, PrivilegeLevel::Machine)
+            .read_csr(ControlAndStatus::MIDELEG, PrivilegeLevel::Machine)
             .unwrap();
 
         ((self.privilege_level == PrivilegeLevel::Machine && mstatus.get_mie())
@@ -733,11 +733,11 @@ impl RVCore {
         let sstatus = self.control_and_status.read_sstatus_unchecked();
         let sip = self
             .control_and_status
-            .read_csr(SIP, PrivilegeLevel::Machine)
+            .read_csr(ControlAndStatus::SIP, PrivilegeLevel::Machine)
             .unwrap();
         let sie = self
             .control_and_status
-            .read_csr(SIE, PrivilegeLevel::Machine)
+            .read_csr(ControlAndStatus::SIE, PrivilegeLevel::Machine)
             .unwrap();
 
         ((self.privilege_level == PrivilegeLevel::Supervisor && sstatus.get_sie())
@@ -1416,11 +1416,11 @@ impl Trap for Exception {
         let delegated = {
             let medelegl = core
                 .control_and_status
-                .read_csr(MEDELEG, PrivilegeLevel::Machine)
+                .read_csr(ControlAndStatus::MEDELEG, PrivilegeLevel::Machine)
                 .unwrap();
             let medelegh = core
                 .control_and_status
-                .read_csr(MEDELEGH, PrivilegeLevel::Machine)
+                .read_csr(ControlAndStatus::MEDELEGH, PrivilegeLevel::Machine)
                 .unwrap();
             let medeleg = ((medelegh as u64) << 32) | (medelegl as u64);
 
@@ -1520,13 +1520,13 @@ fn handle_machine_trap(trap: &impl Trap, core: &mut RVCore, cause: u32) {
     core.privilege_level = PrivilegeLevel::Machine;
 
     core.control_and_status
-        .write_csr(MEPC, core.privilege_level, core.pc)
+        .write_csr(ControlAndStatus::MEPC, core.privilege_level, core.pc)
         .unwrap();
     core.control_and_status
-        .write_csr(MCAUSE, core.privilege_level, cause)
+        .write_csr(ControlAndStatus::MCAUSE, core.privilege_level, cause)
         .unwrap();
     core.control_and_status
-        .write_csr(MTVAL, core.privilege_level, tval)
+        .write_csr(ControlAndStatus::MTVAL, core.privilege_level, tval)
         .unwrap();
 
     let mut mstatus = core.control_and_status.read_mstatus_unchecked();
@@ -1534,12 +1534,12 @@ fn handle_machine_trap(trap: &impl Trap, core: &mut RVCore, cause: u32) {
     mstatus.set_mpie(mstatus.get_mie());
     mstatus.set_mie(false);
     core.control_and_status
-        .write_csr(MSTATUS, core.privilege_level, mstatus.0)
+        .write_csr(ControlAndStatus::MSTATUS, core.privilege_level, mstatus.0)
         .unwrap();
 
     let mtvec = core
         .control_and_status
-        .read_csr(MTVEC, core.privilege_level)
+        .read_csr(ControlAndStatus::MTVEC, core.privilege_level)
         .unwrap();
     let base = mtvec & 0xFFFFFFFC;
 
@@ -1554,7 +1554,6 @@ fn handle_machine_trap(trap: &impl Trap, core: &mut RVCore, cause: u32) {
     } else {
         core.pc = base;
     }
-
 }
 
 fn handle_supervisor_trap(trap: &impl Trap, core: &mut RVCore, cause: u32) {
@@ -1565,13 +1564,13 @@ fn handle_supervisor_trap(trap: &impl Trap, core: &mut RVCore, cause: u32) {
     core.privilege_level = PrivilegeLevel::Supervisor;
 
     core.control_and_status
-        .write_csr(SEPC, core.privilege_level, core.pc)
+        .write_csr(ControlAndStatus::SEPC, core.privilege_level, core.pc)
         .unwrap();
     core.control_and_status
-        .write_csr(SCAUSE, core.privilege_level, cause)
+        .write_csr(ControlAndStatus::SCAUSE, core.privilege_level, cause)
         .unwrap();
     core.control_and_status
-        .write_csr(STVAL, core.privilege_level, tval)
+        .write_csr(ControlAndStatus::STVAL, core.privilege_level, tval)
         .unwrap();
 
     let mut sstatus = core.control_and_status.read_sstatus_unchecked();
@@ -1579,12 +1578,12 @@ fn handle_supervisor_trap(trap: &impl Trap, core: &mut RVCore, cause: u32) {
     sstatus.set_spie(sstatus.get_sie());
     sstatus.set_sie(false);
     core.control_and_status
-        .write_csr(SSTATUS, core.privilege_level, sstatus.0)
+        .write_csr(ControlAndStatus::SSTATUS, core.privilege_level, sstatus.0)
         .unwrap();
 
     let stvec = core
         .control_and_status
-        .read_csr(STVEC, core.privilege_level)
+        .read_csr(ControlAndStatus::STVEC, core.privilege_level)
         .unwrap();
     let base = stvec & 0xFFFFFFFC;
 

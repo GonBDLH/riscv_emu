@@ -1,4 +1,1 @@
-pub fn dump_signature() {
-
-}
-
+pub fn dump_signature() {}

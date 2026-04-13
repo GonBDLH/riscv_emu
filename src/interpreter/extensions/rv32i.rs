@@ -1,7 +1,11 @@
 use crate::interpreter::{
-    bus::Bus, extensions::sign_extend16to32, riscv_core::{
-        BInstruction, Exception, ExceptionType, IInstruction, JInstruction, RInstruction, RVCore, SInstruction, UInstruction, WithErrVal
-    }, virtual_memory::sv32::{AccessType, translate_address}
+    bus::Bus,
+    extensions::sign_extend16to32,
+    riscv_core::{
+        BInstruction, Exception, ExceptionType, IInstruction, JInstruction, RInstruction, RVCore,
+        SInstruction, UInstruction, WithErrVal,
+    },
+    virtual_memory::sv32::{AccessType, translate_address},
 };
 
 pub fn add(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
@@ -228,7 +232,8 @@ pub fn sb(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    bus.write_byte(&phys_address, rs2_val as u8).with_err_val(address)
+    bus.write_byte(&phys_address, rs2_val as u8)
+        .with_err_val(address)
 }
 
 pub fn sh(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
@@ -237,7 +242,8 @@ pub fn sh(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    bus.write_aligned_half_word(&phys_address, rs2_val as u16).with_err_val(address)
+    bus.write_aligned_half_word(&phys_address, rs2_val as u16)
+        .with_err_val(address)
 }
 
 pub fn sw(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
@@ -246,7 +252,8 @@ pub fn sw(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::StoreAmo)?;
 
-    bus.write_aligned_word(&phys_address, rs2_val).with_err_val(address)
+    bus.write_aligned_word(&phys_address, rs2_val)
+        .with_err_val(address)
 }
 
 pub fn beq(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
@@ -256,7 +263,10 @@ pub fn beq(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
         if !core.get_c_ext_active() && new_pc % 4 != 0 {
-            return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
+            return Err(Exception::new(
+                ExceptionType::InstructionAddressMisaligned,
+                new_pc,
+            ));
         }
 
         core.pc = new_pc.wrapping_sub(4);
@@ -272,7 +282,10 @@ pub fn bne(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
         if !core.get_c_ext_active() && new_pc % 4 != 0 {
-            return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
+            return Err(Exception::new(
+                ExceptionType::InstructionAddressMisaligned,
+                new_pc,
+            ));
         }
 
         core.pc = new_pc.wrapping_sub(4);
@@ -288,7 +301,10 @@ pub fn blt(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
         if !core.get_c_ext_active() && new_pc % 4 != 0 {
-            return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
+            return Err(Exception::new(
+                ExceptionType::InstructionAddressMisaligned,
+                new_pc,
+            ));
         }
 
         core.pc = new_pc.wrapping_sub(4);
@@ -304,7 +320,10 @@ pub fn bge(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
         if !core.get_c_ext_active() && new_pc % 4 != 0 {
-            return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
+            return Err(Exception::new(
+                ExceptionType::InstructionAddressMisaligned,
+                new_pc,
+            ));
         }
 
         core.pc = new_pc.wrapping_sub(4);
@@ -320,7 +339,10 @@ pub fn bltu(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
         if !core.get_c_ext_active() && new_pc % 4 != 0 {
-            return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
+            return Err(Exception::new(
+                ExceptionType::InstructionAddressMisaligned,
+                new_pc,
+            ));
         }
 
         core.pc = new_pc.wrapping_sub(4);
@@ -336,7 +358,10 @@ pub fn bgeu(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
         let new_pc = core.pc.wrapping_add(instr.imm);
 
         if !core.get_c_ext_active() && new_pc % 4 != 0 {
-            return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
+            return Err(Exception::new(
+                ExceptionType::InstructionAddressMisaligned,
+                new_pc,
+            ));
         }
 
         core.pc = new_pc.wrapping_sub(4);
@@ -348,7 +373,10 @@ pub fn bgeu(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
 pub fn jal(instr: &JInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let new_pc = core.pc.wrapping_add(instr.imm);
     if !core.get_c_ext_active() && new_pc % 4 != 0 {
-        return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
+        return Err(Exception::new(
+            ExceptionType::InstructionAddressMisaligned,
+            new_pc,
+        ));
     }
 
     core.write_reg(instr.rd, core.pc.wrapping_add(4));
@@ -361,7 +389,10 @@ pub fn jalr(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), 
     let rs1_val = core.read_reg(instr.rs1);
     let new_pc = rs1_val.wrapping_add(instr.imm) & 0xFFFFFFFE;
     if !core.get_c_ext_active() && new_pc % 4 != 0 {
-        return Err(Exception::new(ExceptionType::InstructionAddressMisaligned, new_pc));
+        return Err(Exception::new(
+            ExceptionType::InstructionAddressMisaligned,
+            new_pc,
+        ));
     }
 
     core.write_reg(instr.rd, core.pc.wrapping_add(4));

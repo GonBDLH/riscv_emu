@@ -6,7 +6,7 @@ use crate::interpreter::{
 pub fn csrrw(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let csr = instr.imm as usize;
     let rs1_val = core.read_reg(instr.rs1);
-    
+
     if instr.rd != 0 {
         let old_csr = core
             .control_and_status
@@ -42,7 +42,7 @@ pub fn csrrs(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(),
 pub fn csrrc(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let csr = instr.imm as usize;
     let rs1_val = core.read_reg(instr.rs1);
-    
+
     let old_csr = core
         .control_and_status
         .read_csr(csr, core.privilege_level)

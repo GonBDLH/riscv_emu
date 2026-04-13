@@ -1,6 +1,7 @@
 use crate::interpreter::{
     bus::Bus,
-    riscv_core::{AtomicInstruction, Exception, RVCore}, virtual_memory::sv32::{AccessType, translate_address},
+    riscv_core::{AtomicInstruction, Exception, RVCore},
+    virtual_memory::sv32::{AccessType, translate_address},
 };
 
 pub fn lr_w(instr: &AtomicInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {

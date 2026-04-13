@@ -1,5 +1,6 @@
 use crate::interpreter::{
-    bus::Bus, riscv_core::{Exception, ExceptionType, PrivilegeLevel, RVCore}
+    bus::Bus,
+    riscv_core::{Exception, ExceptionType, PrivilegeLevel, RVCore},
 };
 
 use bitfield::bitfield;
@@ -12,7 +13,7 @@ pub const PTESIZE: u32 = 4;
 pub enum AccessType {
     Load,
     StoreAmo,
-    Execute
+    Execute,
 }
 
 impl AccessType {
@@ -20,7 +21,7 @@ impl AccessType {
         match self {
             AccessType::Load => ExceptionType::LoadPageFault,
             AccessType::StoreAmo => ExceptionType::StoreAmoPageFault,
-            AccessType::Execute => ExceptionType::InstructionPageFault
+            AccessType::Execute => ExceptionType::InstructionPageFault,
         }
     }
 
@@ -28,7 +29,7 @@ impl AccessType {
         match self {
             AccessType::Load => ExceptionType::LoadAccessFault,
             AccessType::StoreAmo => ExceptionType::StoreAmoAccessFault,
-            AccessType::Execute => ExceptionType::InstructionAccessFault
+            AccessType::Execute => ExceptionType::InstructionAccessFault,
         }
     }
 }
@@ -71,7 +72,12 @@ bitfield! {
     pub get_v, set_v: 0;
 }
 
-fn check_access(core: &mut RVCore, pte: &PageTableEntry, access_type: &AccessType, effective_priv: PrivilegeLevel) -> bool {
+fn check_access(
+    core: &mut RVCore,
+    pte: &PageTableEntry,
+    access_type: &AccessType,
+    effective_priv: PrivilegeLevel,
+) -> bool {
     match effective_priv {
         PrivilegeLevel::User => {
             if !pte.get_u() {
@@ -89,9 +95,7 @@ fn check_access(core: &mut RVCore, pte: &PageTableEntry, access_type: &AccessTyp
     }
 
     match access_type {
-        AccessType::Execute => {
-            pte.get_x()
-        },
+        AccessType::Execute => pte.get_x(),
         AccessType::Load => {
             let mstatus = core.control_and_status.read_mstatus_unchecked();
             let mxr = mstatus.get_mxr();
@@ -101,10 +105,8 @@ fn check_access(core: &mut RVCore, pte: &PageTableEntry, access_type: &AccessTyp
             } else {
                 pte.get_r()
             }
-        },
-        AccessType::StoreAmo => {
-            pte.get_w()
         }
+        AccessType::StoreAmo => pte.get_w(),
     }
 }
 
@@ -112,15 +114,23 @@ pub fn translate_address(
     core: &mut RVCore,
     bus: &mut Bus,
     virt_address: u32,
-    access_type: AccessType
+    access_type: AccessType,
 ) -> Result<PhysicalAddress, Exception> {
     let mstatus = core.control_and_status.read_mstatus_unchecked();
-    
+
     if core.privilege_level == PrivilegeLevel::Machine {
-        if mstatus.get_mprv() && (access_type == AccessType::Load || access_type == AccessType::StoreAmo) {
+        if mstatus.get_mprv()
+            && (access_type == AccessType::Load || access_type == AccessType::StoreAmo)
+        {
             let mpp = mstatus.get_mpp();
-            translate(core, bus, virt_address, access_type, PrivilegeLevel::new(mpp))
-        } else  {
+            translate(
+                core,
+                bus,
+                virt_address,
+                access_type,
+                PrivilegeLevel::new(mpp),
+            )
+        } else {
             Ok(PhysicalAddress(virt_address as u64))
         }
     } else {
@@ -133,7 +143,7 @@ fn translate(
     bus: &mut Bus,
     virt_address: u32,
     access_type: AccessType,
-    effective_priv: PrivilegeLevel
+    effective_priv: PrivilegeLevel,
 ) -> Result<PhysicalAddress, Exception> {
     let satp = core.control_and_status.read_satp_unchecked();
 
@@ -160,12 +170,18 @@ fn translate(
         let pte = PageTableEntry(bus.read_word(&PhysicalAddress(pte_addr as u64))?);
 
         if !pte.get_v() || (!pte.get_r() && pte.get_w()) {
-            return Err(Exception::new(access_type.get_page_fault_exception(), virt_address));
+            return Err(Exception::new(
+                access_type.get_page_fault_exception(),
+                virt_address,
+            ));
         }
 
         if pte.get_r() || pte.get_x() {
             if i > 0 && (pte.get_ppn0() != 0) {
-                return Err(Exception::new(access_type.get_page_fault_exception(), virt_address));
+                return Err(Exception::new(
+                    access_type.get_page_fault_exception(),
+                    virt_address,
+                ));
             }
 
             // TODO PASO 7
@@ -173,7 +189,10 @@ fn translate(
             // Shadow Stack Memory Protection rules. If not, stop and raise an access-fault exception
 
             if !check_access(core, &pte, &access_type, effective_priv) {
-                return Err(Exception::new(access_type.get_page_fault_exception(), virt_address));
+                return Err(Exception::new(
+                    access_type.get_page_fault_exception(),
+                    virt_address,
+                ));
             }
 
             if pte.get_a() || (access_type == AccessType::StoreAmo && pte.get_d()) {
@@ -185,7 +204,8 @@ fn translate(
                         new_pte.set_d(true);
                     }
 
-                    bus.write_aligned_word(&PhysicalAddress(pte_addr as u64), new_pte.0).unwrap();
+                    bus.write_aligned_word(&PhysicalAddress(pte_addr as u64), new_pte.0)
+                        .unwrap();
                 } else {
                     continue;
                 }
@@ -207,5 +227,8 @@ fn translate(
         a = pte.get_ppn() * PAGESIZE;
     }
 
-    Err(Exception::new(access_type.get_access_fault_exception(), virt_address))
+    Err(Exception::new(
+        access_type.get_access_fault_exception(),
+        virt_address,
+    ))
 }

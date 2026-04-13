@@ -1,5 +1,5 @@
-pub mod uart_16550;
 pub mod timer;
+pub mod uart_16550;
 
 pub trait Peripheral {
     fn new() -> Self;
