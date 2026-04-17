@@ -24,14 +24,6 @@ impl AccessType {
             AccessType::Execute => ExceptionType::InstructionPageFault,
         }
     }
-
-    fn get_access_fault_exception(&self) -> ExceptionType {
-        match self {
-            AccessType::Load => ExceptionType::LoadAccessFault,
-            AccessType::StoreAmo => ExceptionType::StoreAmoAccessFault,
-            AccessType::Execute => ExceptionType::InstructionAccessFault,
-        }
-    }
 }
 
 bitfield! {

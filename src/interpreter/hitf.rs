@@ -77,7 +77,7 @@ impl HitfState {
         }
     }
 
-    pub fn read_fromhost_byte(&self, address: usize) -> u8 {
+    pub fn read_fromhost_byte(&self, _address: usize) -> u8 {
         // let address = address - self.fromhost;
 
         // self.fromhost_val[address]
