@@ -228,7 +228,7 @@ fn translate(
     }
 
     Err(Exception::new(
-        access_type.get_access_fault_exception(),
+        access_type.get_page_fault_exception(),
         virt_address,
     ))
 }

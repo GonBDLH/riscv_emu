@@ -61,6 +61,8 @@ impl Peripheral for Uart16550 {
         Self { regs, interrupt }
     }
 
+    fn update(&mut self, _duration: std::time::Duration) {}
+
     fn has_interrupt(&mut self) -> bool {
         self.interrupt.swap(false, Ordering::Acquire)
     }

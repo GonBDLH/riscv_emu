@@ -10,7 +10,7 @@ use crate::interpreter::extensions::rv32zifencei::fence_i;
 
 pub struct RVCore {
     // x0/zero -> Siempre 0
-    registers: [u32; 32],
+    pub registers: [u32; 32],
     pub pc: u32,
 
     pub control_and_status: ControlAndStatus,

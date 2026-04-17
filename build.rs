@@ -39,7 +39,7 @@ fn {test_name}() {{
     let mut interpreter = Interpreter::new_test_elf("elf_tests/{name}", hitf_size);
     let ret = interpreter.run();
 
-    assert_eq!(ret, 0);
+    assert_eq!(ret.unwrap(), 0);
 }}
 "#
             )

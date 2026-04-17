@@ -5,9 +5,12 @@ edition = "2024"
 
 [features]
 hitf = []
+headless = []
 
 [dependencies]
 bitfield = "0.19.1"
+eframe = "0.34.1"
+egui_extras = "0.34.1"
 elf = "0.8.0"
 ihex = "3.0.0"
 ntest = "0.9.3"

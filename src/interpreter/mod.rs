@@ -1,4 +1,8 @@
-use std::{fs::File, io::Read};
+use std::{
+    fs::File,
+    io::Read,
+    time::{Duration, Instant},
+};
 
 use elf::{ElfBytes, endian::LittleEndian};
 use ihex::{Reader, Record};
@@ -32,7 +36,7 @@ const NUM_HARTS: usize = 1;
 #[derive(Default)]
 pub struct Interpreter {
     pub bus: Bus,
-    core: RVCore,
+    pub core: RVCore,
 
     #[cfg(feature = "hitf")]
     pub hitf: HitfState,
@@ -143,12 +147,21 @@ impl Interpreter {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.bus = Bus::default();
+        self.core = RVCore::default();
+    }
+
     pub fn fetch(&mut self) -> Result<u32, Exception> {
         let pc = self.core.pc;
         let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute)?;
 
-        if phys_pc.0 == 0x80002678 {
-            println!("DBG");
+        #[cfg(feature = "headless")]
+        {
+            if phys_pc.0 == 0x8006DFFE {
+                println!("DBG");
+            }
+            println!("{:08X}", phys_pc.0);
         }
 
         let val = self
@@ -169,7 +182,7 @@ impl Interpreter {
         }
     }
 
-    pub fn step(&mut self) -> Result<(), Exception> {
+    pub fn core_step(&mut self) -> Result<(), Exception> {
         #![allow(unreachable_code)]
 
         if self.core.stalled {
@@ -181,9 +194,9 @@ impl Interpreter {
             .decode(fetched)
             .ok_or(Exception::new(ExceptionType::IllegalInstruction, fetched))?;
 
-        if self.core.pc == 0x800001ac {
-            println!("TEST");
-        }
+        // if self.core.pc == 0x800001ac {
+        //     println!("TEST");
+        // }
 
         #[cfg(feature = "hitf")]
         return {
@@ -195,7 +208,7 @@ impl Interpreter {
                         self.core.control_and_status.increment_minstret();
                         self.core.pc = self.core.pc.wrapping_add(instr.get_width());
                     }
-                    
+
                     _ => {}
                 }
 
@@ -216,7 +229,34 @@ impl Interpreter {
         Ok(())
     }
 
-    pub fn update_peripherals(&mut self) {
+    pub fn emulator_step(&mut self, duration: Duration) -> Option<u32> {
+        self.update_peripherals(duration);
+
+        // TODO Check interrupts
+        if let Some(int) = self.check_interrupt() {
+            int.handle(&mut self.core);
+        }
+
+        if let Err(exception) = self.core_step() {
+            match exception.exc_type {
+                #[cfg(feature = "hitf")]
+                ExceptionType::HitfExit => {
+                    return Some(exception.get_val() >> 1);
+                }
+                #[cfg(feature = "hitf")]
+                ExceptionType::HitfSyscall => {
+                    HitfState::syscall(&exception, &self.core, &self.bus)
+                }
+                _ => exception.handle(&mut self.core),
+            }
+        };
+
+        None
+    }
+
+    pub fn update_peripherals(&mut self, duration: Duration) {
+        self.bus.timer.update(duration);
+
         if self.bus.timer.has_interrupt() {
             self.core
                 .control_and_status
@@ -276,28 +316,27 @@ impl Interpreter {
         u32::from_le_bytes([val_1, val_2, val_3, val_4])
     }
 
-    pub fn run(&mut self) -> u32 {
+    pub fn run(&mut self) -> Option<u32> {
+        let mut start = Instant::now();
+
         loop {
-            self.update_peripherals();
-
-            // TODO Check interrupts
-            if let Some(int) = self.check_interrupt() {
-                int.handle(&mut self.core);
+            let now = Instant::now();
+            if let Some(ret) = self.emulator_step(now.duration_since(start)) {
+                return Some(ret);
             }
-
-            if let Err(exception) = self.step() {
-                match exception.exc_type {
-                    #[cfg(feature = "hitf")]
-                    ExceptionType::HitfExit => {
-                        return exception.get_val() >> 1;
-                    }
-                    #[cfg(feature = "hitf")]
-                    ExceptionType::HitfSyscall => {
-                        HitfState::syscall(&exception, &self.core, &self.bus);
-                    }
-                    _ => exception.handle(&mut self.core),
-                }
-            };
+            start = now;
         }
+    }
+
+    pub fn run_time(&mut self, duration: Duration) -> Option<u32> {
+        let start = Instant::now();
+
+        while Instant::now().duration_since(start) < duration {
+            if let Some(ret) = self.emulator_step(duration) {
+                return Some(ret);
+            }
+        }
+
+        None
     }
 }

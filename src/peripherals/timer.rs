@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use crate::peripherals::Peripheral;
 
@@ -18,11 +18,14 @@ impl Peripheral for RealTimeCounter {
         }
     }
 
-    fn has_interrupt(&mut self) -> bool {
+    // TODO Ver si aqui hay que usar Duration o no (Es un RTC, deberia tener en cuenta solo el tiempo que se ejecuta el emulador, o el tiempo total?)
+    fn update(&mut self, _duration: Duration) {
         let new_earlier = Instant::now();
         self.mtime += (new_earlier.duration_since(self.earlier).as_nanos() / 100) as u64;
         self.earlier = new_earlier;
+    }
 
+    fn has_interrupt(&mut self) -> bool {
         self.mtime >= self.mtimecmp
     }
 
