@@ -47,9 +47,11 @@ impl ControlAndStatus {
     const MCYCLE: usize = 0xB00;
     const MINSTRET: usize = 0xB02;
     const MHPCOUNTER3: usize = 0xB03; // MAX 31 (-3)
+    const MHPCOUNTER31: usize = 0xB1F;
     const MCYCLEH: usize = 0xB80;
     const MINSTRETH: usize = 0xB82;
-    const MHPCOUNTERH3: usize = 0xB83; // MAX 31 (-3)
+    const MHPCOUNTER3H: usize = 0xB83; // MAX 31 (-3)
+    const MHPCOUNTER31H: usize = 0xB9F; // MAX 31 (-3)
 
     const MENVCFG: usize = 0x30A;
     const MENVCFGH: usize = 0x31A;
@@ -96,7 +98,14 @@ impl ControlAndStatus {
     // UNPRIVILEGED
     const CYCLE: usize = 0xC00;
     const TIME: usize = 0xC01;
+    const INSTRET: usize = 0xC02;
+    const HPMCOUNTER3: usize = 0xC03;
+    const HPMCOUNTER31: usize = 0xC1F;
     const CYCLEH: usize = 0xC80;
+    const TIMEH: usize = 0xC81;
+    const INSTRETH: usize = 0xC82;
+    const HPMCOUNTER3H: usize = 0xC83;
+    const HPMCOUNTER31H: usize = 0xC9F;
 
     pub fn new(hart_id: u32) -> Self {
         let mut csrs = [0u32; 4096];
@@ -163,7 +172,11 @@ impl ControlAndStatus {
             Self::MENVCFGH => self.csrs[csr] & Self::MENVCFGH_MASK,
 
             Self::MCYCLE => self.csrs[csr],
+            Self::MINSTRET => self.csrs[csr],
+            Self::MHPCOUNTER3..Self::MHPCOUNTER31 => self.csrs[csr],
             Self::MCYCLEH => self.csrs[csr],
+            Self::MINSTRETH => self.csrs[csr],
+            Self::MHPCOUNTER3H..Self::MHPCOUNTER31H => self.csrs[csr],
 
             Self::PMPCFG0..=Self::PMPCFG15 => self.pmp.get_pmp_cfg(csr - Self::PMPCFG0),
             Self::PMPADDR0..=Self::PMPADDR63 => self.pmp.get_pmp_addr(csr - Self::PMPADDR0),
@@ -193,8 +206,16 @@ impl ControlAndStatus {
             }
 
             Self::CYCLE => self.cycle as u32,
-            Self::CYCLEH => (self.cycle >> 32) as u32,
             Self::TIME => bus.read_word(&PhysicalAddress(RTC_BASE as u64)).unwrap(),
+            Self::INSTRET => self.csrs[Self::MINSTRET],
+            Self::HPMCOUNTER3..=Self::HPMCOUNTER31 => {
+                let csr = (csr - Self::HPMCOUNTER3) + Self::MHPCOUNTER3;
+                self.csrs[csr]
+            },
+            Self::CYCLEH => (self.cycle >> 32) as u32,
+            Self::TIMEH => bus.read_word(&PhysicalAddress(RTC_BASE as u64 + 4)).unwrap(),
+            Self::INSTRETH => self.csrs[Self::MINSTRETH],
+            Self::HPMCOUNTER3H..=Self::HPMCOUNTER31H => self.csrs[csr],
 
             _ => {
                 println!("READ {:03X}", csr);

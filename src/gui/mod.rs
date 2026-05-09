@@ -8,7 +8,7 @@ use std::{
 
 use eframe::egui::{self, Button};
 use egui_extras::{Column, TableBuilder};
-use riscv_emu::interpreter::Interpreter;
+use emulator::interpreter::Interpreter;
 
 enum Command {
     Reset,

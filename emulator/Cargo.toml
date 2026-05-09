@@ -1,0 +1,14 @@
+[package]
+name = "emulator"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bitfield = "0.19.1"
+elf = "0.8.0"
+ihex = "3.0.0"
+ntest = "0.9.3"
+
+[features]
+hitf = []
+semihosting = []

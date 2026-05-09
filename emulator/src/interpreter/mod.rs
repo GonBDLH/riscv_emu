@@ -167,15 +167,6 @@ impl Interpreter {
         // TODO Hay que cambiar esto para cuando se haga un fecth de 16 bits (C instr)
         let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute, 4)?;
 
-        #[cfg(feature = "headless")]
-        {
-            if phys_pc.0 == 0x8006DFFE {
-                println!("DBG");
-            }
-            println!("{:08X}", phys_pc.0);
-        }
-        // println!("{:08X}", phys_pc.0);
-
         let val = self.bus.read_word(&phys_pc).with_err_val(pc)?;
 
         Ok(val)

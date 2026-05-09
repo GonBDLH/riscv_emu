@@ -1,6 +1,5 @@
 use clap::Parser;
-
-use riscv_emu::interpreter::Interpreter;
+use emulator::interpreter::Interpreter;
 
 use crate::gui::GuiState;
 
