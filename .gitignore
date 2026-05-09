@@ -5,4 +5,5 @@
 
 /riscof_tests
 /fw
-/elf_tests
+/hitf_elf_tests
+/semihosting_elf_tests

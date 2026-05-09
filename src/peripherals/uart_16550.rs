@@ -87,8 +87,8 @@ impl Peripheral for Uart16550 {
         let mut regs = regs.lock().expect("Mutex envenendado");
         match address {
             UART_RHR_THR => {
-                // print!("{}", val as char);
-                println!("{}", val);
+                print!("{}", val as char);
+                // println!("{}", val);
                 io::stdout().flush().expect("Fallo al limpiar stdout");
             }
             _ => regs[address] = val,

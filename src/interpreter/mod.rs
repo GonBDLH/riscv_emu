@@ -9,13 +9,15 @@ use ihex::{Reader, Record};
 
 #[cfg(feature = "hitf")]
 use crate::interpreter::hitf::HitfState;
+#[cfg(feature = "semihosting")]
+use crate::interpreter::semihosting::semihosting;
+
 use crate::{
     interpreter::{
         bus::Bus,
-        csr::ControlAndStatus,
         riscv_core::{
-            Exception, ExceptionType, InstructionType, Interrupt, InterruptType, PrivilegeLevel,
-            RVCore, Trap,
+            Exception, ExceptionType, InstructionType, Interrupt, InterruptType, RVCore, Trap,
+            WithErrVal,
         },
         virtual_memory::sv32::{AccessType, PhysicalAddress, translate_address},
     },
@@ -25,8 +27,12 @@ use crate::{
 mod bus;
 mod csr;
 mod extensions;
+mod pmp;
 mod riscv_core;
 mod virtual_memory;
+
+#[cfg(feature = "semihosting")]
+mod semihosting;
 
 #[cfg(feature = "hitf")]
 mod hitf;
@@ -44,6 +50,7 @@ pub struct Interpreter {
 
 impl Interpreter {
     #[cfg(test)]
+    #[allow(unused_variables)]
     pub fn new_test_elf(path: &str, hitf_size: u8) -> Self {
         let mut interpreter = Self {
             bus: Bus::default(),
@@ -55,7 +62,10 @@ impl Interpreter {
 
         interpreter.load_elf(path);
 
-        interpreter.bus.hitf.hitf_size = hitf_size;
+        #[cfg(feature = "hitf")]
+        {
+            interpreter.bus.hitf.hitf_size = hitf_size;
+        }
 
         interpreter
     }
@@ -154,7 +164,8 @@ impl Interpreter {
 
     pub fn fetch(&mut self) -> Result<u32, Exception> {
         let pc = self.core.pc;
-        let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute)?;
+        // TODO Hay que cambiar esto para cuando se haga un fecth de 16 bits (C instr)
+        let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute, 4)?;
 
         #[cfg(feature = "headless")]
         {
@@ -163,11 +174,9 @@ impl Interpreter {
             }
             println!("{:08X}", phys_pc.0);
         }
+        // println!("{:08X}", phys_pc.0);
 
-        let val = self
-            .bus
-            .read_word(&phys_pc)
-            .map_err(|_| Exception::new(ExceptionType::InstructionAccessFault, pc))?;
+        let val = self.bus.read_word(&phys_pc).with_err_val(pc)?;
 
         Ok(val)
     }
@@ -190,13 +199,32 @@ impl Interpreter {
         }
 
         let fetched = self.fetch()?;
+        #[cfg(feature = "semihosting")]
+        {
+            if fetched == 0x01f01013 {
+                use crate::interpreter::riscv_core::WithErrVal;
+
+                let address = PhysicalAddress(self.core.pc as u64 + 4);
+                let break_instr = self
+                    .bus
+                    .read_word(&address)
+                    .with_err_val(address.0 as u32)?;
+                let address = PhysicalAddress(self.core.pc as u64 + 8);
+                let exit = self
+                    .bus
+                    .read_word(&address)
+                    .with_err_val(address.0 as u32)?;
+
+                if break_instr == 0x00100073 && exit == 0x40705013 {
+                    self.core.pc = self.core.pc.wrapping_add(12);
+                    return semihosting(self.core.read_reg(10), self.core.read_reg(11));
+                }
+            }
+        }
+
         let instr = self
             .decode(fetched)
             .ok_or(Exception::new(ExceptionType::IllegalInstruction, fetched))?;
-
-        // if self.core.pc == 0x800001ac {
-        //     println!("TEST");
-        // }
 
         #[cfg(feature = "hitf")]
         return {
@@ -240,16 +268,18 @@ impl Interpreter {
         if let Err(exception) = self.core_step() {
             match exception.exc_type {
                 #[cfg(feature = "hitf")]
-                ExceptionType::HitfExit => {
+                ExceptionType::ExitException => {
                     return Some(exception.get_val() >> 1);
                 }
+                #[cfg(feature = "semihosting")]
+                ExceptionType::ExitException => return Some(exception.get_val()),
                 #[cfg(feature = "hitf")]
-                ExceptionType::HitfSyscall => {
-                    HitfState::syscall(&exception, &self.core, &self.bus)
-                }
+                ExceptionType::HitfSyscall => HitfState::syscall(&exception, &self.core, &self.bus),
                 _ => exception.handle(&mut self.core),
             }
         };
+
+        self.core.control_and_status.inc_cycle();
 
         None
     }
@@ -270,13 +300,11 @@ impl Interpreter {
         let mip: u32 = self
             .core
             .control_and_status
-            .read_csr(ControlAndStatus::MIP, PrivilegeLevel::Machine)
-            .unwrap();
-        let mie = self
-            .core
-            .control_and_status
-            .read_csr(ControlAndStatus::MIE, PrivilegeLevel::Machine)
-            .unwrap();
+            // .read_csr(bus, ControlAndStatus::MIP, PrivilegeLevel::Machine)
+            .read_mip_unchecked();
+        let mie = self.core.control_and_status.read_mie_unchecked();
+        // .read_csr(bus, ControlAndStatus::MIE, PrivilegeLevel::Machine)
+        // .unwrap();
 
         let pending = mip & mie;
 

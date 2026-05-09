@@ -1,6 +1,6 @@
 use crate::interpreter::{
     bus::Bus,
-    riscv_core::{Exception, ExceptionType, PrivilegeLevel, RVCore},
+    riscv_core::{Exception, ExceptionType, PrivilegeLevel, RVCore, WithErrVal},
 };
 
 use bitfield::bitfield;
@@ -24,6 +24,14 @@ impl AccessType {
             AccessType::Execute => ExceptionType::InstructionPageFault,
         }
     }
+
+    pub fn get_access_fault_exception(&self) -> ExceptionType {
+        match self {
+            AccessType::Load => ExceptionType::LoadAccessFault,
+            AccessType::StoreAmo => ExceptionType::StoreAmoAccessFault,
+            AccessType::Execute => ExceptionType::InstructionAccessFault,
+        }
+    }
 }
 
 bitfield! {
@@ -34,6 +42,7 @@ bitfield! {
 }
 
 bitfield! {
+    #[derive(Debug)]
     pub struct PhysicalAddress(u64);
     pub get_ppn1, set_ppn1: 33, 22;
     pub get_ppn0, set_ppn0: 21, 12;
@@ -107,6 +116,7 @@ pub fn translate_address(
     bus: &mut Bus,
     virt_address: u32,
     access_type: AccessType,
+    access_length: u64,
 ) -> Result<PhysicalAddress, Exception> {
     let mstatus = core.control_and_status.read_mstatus_unchecked();
 
@@ -115,18 +125,33 @@ pub fn translate_address(
             && (access_type == AccessType::Load || access_type == AccessType::StoreAmo)
         {
             let mpp = mstatus.get_mpp();
+            let effective_priv = PrivilegeLevel::new(mpp);
             translate(
                 core,
                 bus,
                 virt_address,
-                access_type,
-                PrivilegeLevel::new(mpp),
+                &access_type,
+                effective_priv,
+                access_length,
             )
         } else {
-            Ok(PhysicalAddress(virt_address as u64))
+            core.check_pmp(
+                PhysicalAddress(virt_address as u64),
+                core.privilege_level,
+                &access_type,
+                access_length,
+            )
+            .with_err_val(virt_address)
         }
     } else {
-        translate(core, bus, virt_address, access_type, core.privilege_level)
+        translate(
+            core,
+            bus,
+            virt_address,
+            &access_type,
+            core.privilege_level,
+            access_length,
+        )
     }
 }
 
@@ -134,8 +159,9 @@ fn translate(
     core: &mut RVCore,
     bus: &mut Bus,
     virt_address: u32,
-    access_type: AccessType,
+    access_type: &AccessType,
     effective_priv: PrivilegeLevel,
+    access_length: u64,
 ) -> Result<PhysicalAddress, Exception> {
     let satp = core.control_and_status.read_satp_unchecked();
 
@@ -159,7 +185,18 @@ fn translate(
             a + va.get_vpn0() * PTESIZE
         };
 
-        let pte = PageTableEntry(bus.read_word(&PhysicalAddress(pte_addr as u64))?);
+        let pte_phys_address = core
+            .check_pmp(
+                PhysicalAddress(pte_addr as u64),
+                PrivilegeLevel::Supervisor,
+                access_type,
+                4,
+            )
+            .with_err_val(virt_address)?;
+        let pte = PageTableEntry(
+            bus.read_word(&pte_phys_address)
+                .with_err_val(virt_address)?,
+        );
 
         if !pte.get_v() || (!pte.get_r() && pte.get_w()) {
             return Err(Exception::new(
@@ -187,12 +224,23 @@ fn translate(
                 ));
             }
 
-            if !pte.get_a() || (access_type == AccessType::StoreAmo && !pte.get_d()) {
-                let mut new_pte = PageTableEntry(bus.read_word(&PhysicalAddress(pte_addr as u64))?);
+            if !pte.get_a() || (*access_type == AccessType::StoreAmo && !pte.get_d()) {
+                let new_pte_phys_address = core
+                    .check_pmp(
+                        PhysicalAddress(pte_addr as u64),
+                        PrivilegeLevel::Supervisor,
+                        access_type,
+                        4,
+                    )
+                    .with_err_val(virt_address)?;
+                let mut new_pte = PageTableEntry(
+                    bus.read_word(&new_pte_phys_address)
+                        .with_err_val(virt_address)?,
+                );
 
                 if new_pte.0 == pte.0 {
                     new_pte.set_a(true);
-                    if access_type == AccessType::StoreAmo {
+                    if *access_type == AccessType::StoreAmo {
                         new_pte.set_d(true);
                     }
 
@@ -203,16 +251,18 @@ fn translate(
                 }
             }
 
-            let mut phys_addres = PhysicalAddress(0);
-            phys_addres.set_page_offset(va.get_page_offset() as u64);
+            let mut phys_address = PhysicalAddress(0);
+            phys_address.set_page_offset(va.get_page_offset() as u64);
             if i > 0 {
-                phys_addres.set_ppn0(va.get_vpn0() as u64);
-                phys_addres.set_ppn1(pte.get_ppn1() as u64);
+                phys_address.set_ppn0(va.get_vpn0() as u64);
+                phys_address.set_ppn1(pte.get_ppn1() as u64);
             } else {
-                phys_addres.set_ppn(pte.get_ppn() as u64);
+                phys_address.set_ppn(pte.get_ppn() as u64);
             }
 
-            return Ok(phys_addres);
+            return core
+                .check_pmp(phys_address, effective_priv, access_type, access_length)
+                .with_err_val(virt_address);
         }
 
         i -= 1;

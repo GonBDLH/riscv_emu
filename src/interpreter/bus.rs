@@ -1,15 +1,9 @@
 #![allow(clippy::items_after_test_module)]
 
-use std::collections::HashSet;
-
 #[cfg(feature = "hitf")]
 use crate::interpreter::hitf::HitfState;
 use crate::{
-    interpreter::{
-        NUM_HARTS,
-        riscv_core::{Exception, ExceptionType},
-        virtual_memory::sv32::PhysicalAddress,
-    },
+    interpreter::{NUM_HARTS, riscv_core::ExceptionType, virtual_memory::sv32::{AccessType, PhysicalAddress}},
     peripherals::{Peripheral, timer::RealTimeCounter, uart_16550::Uart16550},
 };
 
@@ -40,7 +34,7 @@ pub struct Bus {
     pub hitf: HitfState,
 
     // PARA RV32A
-    reserved_addresses: [HashSet<usize>; NUM_HARTS],
+    reserved_addresses: [Option<(usize, usize)>; NUM_HARTS],
 }
 
 impl Default for Bus {
@@ -50,7 +44,7 @@ impl Default for Bus {
             rom: vec![0x00; ROM_SIZE],
             uart: Uart16550::new(),
             timer: RealTimeCounter::new(),
-            reserved_addresses: [HashSet::new(); NUM_HARTS],
+            reserved_addresses: [None],
 
             #[cfg(feature = "hitf")]
             hitf: HitfState::default(),
@@ -59,7 +53,7 @@ impl Default for Bus {
 }
 
 impl Bus {
-    pub fn read_byte(&self, phys_address: &PhysicalAddress) -> Result<u8, Exception> {
+    pub fn read_byte(&self, phys_address: &PhysicalAddress) -> Result<u8, ExceptionType> {
         let address = phys_address.0 as usize;
 
         match address {
@@ -78,11 +72,15 @@ impl Bus {
             ROM_BASE..ROM_END => Ok(self.rom[address - ROM_BASE]),
             UART_BASE..UART_END => Ok(self.uart.read_byte(address - UART_BASE)),
             RTC_BASE..RTC_END => Ok(self.timer.read_byte(address - RTC_BASE)),
-            _ => Err(Exception::new(ExceptionType::LoadAccessFault, 0)),
+            _ => Err(ExceptionType::LoadAccessFault),
         }
     }
 
-    pub fn write_byte(&mut self, phys_address: &PhysicalAddress, val: u8) -> Result<(), Exception> {
+    pub fn write_byte(
+        &mut self,
+        phys_address: &PhysicalAddress,
+        val: u8,
+    ) -> Result<(), ExceptionType> {
         let address = phys_address.0 as usize;
 
         match address {
@@ -102,11 +100,12 @@ impl Bus {
 
                 self.dram[address - DRAM_BASE] = val;
 
-                for i in 0..NUM_HARTS {
-                    if self.is_address_reserved(i, address) {
-                        self.invalidate_reserved_address(i, address);
-                    }
-                }
+                // TODO Si en algun momento meto mas HARTS hay que hacer que se invaliden los de OTROS HARTS
+                // for i in 0..NUM_HARTS {
+                //     if self.is_address_inside_reservation_set(i, address) {
+                //         self.invalidate_reserved_address(i);
+                //     }
+                // }
 
                 Ok(())
             }
@@ -119,13 +118,13 @@ impl Bus {
                 Ok(())
             }
 
-            _ => Err(Exception::new(ExceptionType::StoreAmoAccessFault, 0)),
+            _ => Err(ExceptionType::StoreAmoAccessFault),
         }
     }
 
-    pub fn read_aligned_word(&self, phys_address: &PhysicalAddress) -> Result<u32, Exception> {
+    pub fn read_aligned_word(&self, phys_address: &PhysicalAddress) -> Result<u32, ExceptionType> {
         if phys_address.0 % 4 != 0 {
-            return Err(Exception::new(ExceptionType::LoadAddressMisaligned, 0));
+            return Err(ExceptionType::LoadAddressMisaligned);
         }
 
         let val_0 = self.read_byte(phys_address)?;
@@ -136,7 +135,7 @@ impl Bus {
         Ok(u32::from_le_bytes([val_0, val_1, val_2, val_3]))
     }
 
-    pub fn read_word(&self, phys_address: &PhysicalAddress) -> Result<u32, Exception> {
+    pub fn read_word(&self, phys_address: &PhysicalAddress) -> Result<u32, ExceptionType> {
         let val_0 = self.read_byte(phys_address)?;
         let val_1 = self.read_byte(&phys_address.wrapping_add(1))?;
         let val_2 = self.read_byte(&phys_address.wrapping_add(2))?;
@@ -145,9 +144,12 @@ impl Bus {
         Ok(u32::from_le_bytes([val_0, val_1, val_2, val_3]))
     }
 
-    pub fn read_aligned_half_word(&self, phys_address: &PhysicalAddress) -> Result<u16, Exception> {
+    pub fn read_aligned_half_word(
+        &self,
+        phys_address: &PhysicalAddress,
+    ) -> Result<u16, ExceptionType> {
         if phys_address.0 % 2 != 0 {
-            return Err(Exception::new(ExceptionType::LoadAddressMisaligned, 0));
+            return Err(ExceptionType::LoadAddressMisaligned);
         }
 
         let val_0 = self.read_byte(phys_address)?;
@@ -160,9 +162,9 @@ impl Bus {
         &mut self,
         phys_address: &PhysicalAddress,
         half_word: u16,
-    ) -> Result<(), Exception> {
+    ) -> Result<(), ExceptionType> {
         if phys_address.0 % 2 != 0 {
-            return Err(Exception::new(ExceptionType::StoreAmoAddressMisaligned, 0));
+            return Err(ExceptionType::StoreAmoAddressMisaligned);
         }
 
         let bytes = half_word.to_le_bytes();
@@ -176,9 +178,9 @@ impl Bus {
         &mut self,
         phys_address: &PhysicalAddress,
         word: u32,
-    ) -> Result<(), Exception> {
+    ) -> Result<(), ExceptionType> {
         if phys_address.0 % 4 != 0 {
-            return Err(Exception::new(ExceptionType::StoreAmoAddressMisaligned, 0));
+            return Err(ExceptionType::StoreAmoAddressMisaligned);
         }
 
         let bytes = word.to_le_bytes();
@@ -190,22 +192,61 @@ impl Bus {
         Ok(())
     }
 
-    pub fn reserve_address(&mut self, hart_id: usize, address: usize) {
-        self.reserved_addresses[hart_id].insert(address);
+    pub fn check_pma(&self, phys_address: &PhysicalAddress, _acces_type: AccessType) -> bool {
+        let address = phys_address.0 as usize;
+
+        // TODO Queda usar access_type
+        match address {
+            DRAM_BASE..DRAM_END => {
+                true
+            }
+            UART_BASE..UART_END => {
+                true
+            }
+            RTC_BASE..RTC_END => {
+                true
+            }
+
+            _ => false
+        }
     }
 
-    pub fn invalidate_reserved_address(&mut self, hart_id: usize, address: usize) {
-        self.reserved_addresses[hart_id].remove(&address);
+    pub fn reserve_address(&mut self, hart_id: usize, address_start: usize, address_end: usize) {
+        assert!(hart_id < NUM_HARTS);
+
+        self.reserved_addresses[hart_id] = Some((address_start, address_end))
     }
 
-    pub fn is_address_reserved(&self, hart_id: usize, address: usize) -> bool {
-        self.reserved_addresses[hart_id].contains(&address)
+    pub fn invalidate_reserved_address(&mut self, hart_id: usize) {
+        assert!(hart_id < NUM_HARTS);
+
+        self.reserved_addresses[hart_id] = None
+    }
+
+    pub fn is_address_reserved(&self, hart_id: usize, address_start: usize, address_end: usize) -> bool {
+        assert!(hart_id < NUM_HARTS);
+
+        if let Some((start, end)) = self.reserved_addresses[hart_id] {
+            address_start >= start && address_end < end
+        } else {
+            false
+        }
+    }
+
+    pub fn is_address_inside_reservation_set(&self, hart_id: usize, address: usize) -> bool {
+        assert!(hart_id < NUM_HARTS);
+
+        if let Some((start, end)) = self.reserved_addresses[hart_id] {
+            address >= start && address < end
+        } else {
+            false
+        }
     }
 }
 
 impl Bus {
     pub fn load_section(&mut self, data: &[u8], start: usize) {
-        assert!(start >= DRAM_BASE, "Invalid address");
+        assert!(start >= DRAM_BASE, "Invalid address {start}");
         assert!(start + data.len() <= DRAM_END, "Segment too big");
 
         let offset = start - DRAM_BASE;

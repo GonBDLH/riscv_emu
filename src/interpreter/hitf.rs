@@ -198,7 +198,10 @@ impl Hitf {
                 if self.data & 0b1 > 0 {
                     // EXIT CODE
 
-                    return Err(Exception::new(ExceptionType::HitfExit, self.data as u32));
+                    return Err(Exception::new(
+                        ExceptionType::ExitException,
+                        self.data as u32,
+                    ));
                 } else {
                     // SYSCALL
                     let syscall = self.data;

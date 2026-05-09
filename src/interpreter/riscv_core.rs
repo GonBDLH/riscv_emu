@@ -7,6 +7,8 @@ use crate::interpreter::extensions::rv32m::*;
 use crate::interpreter::extensions::rv32privileged::*;
 use crate::interpreter::extensions::rv32zicrs::*;
 use crate::interpreter::extensions::rv32zifencei::fence_i;
+use crate::interpreter::virtual_memory::sv32::AccessType;
+use crate::interpreter::virtual_memory::sv32::PhysicalAddress;
 
 pub struct RVCore {
     // x0/zero -> Siempre 0
@@ -661,7 +663,13 @@ impl RVCore {
 
                 if funct4 & 0b1 == 1 {
                     if rs2 == 0 && rd_rs1 == 0 {
-                        todo!("C.EBREAK")
+                        Some(InstructionType::I(IInstruction::new(
+                            instr as u32,
+                            0,
+                            0,
+                            0,
+                            ebreak,
+                        )))
                     } else if rs2 == 0 {
                         Some(InstructionType::CR(CRInstruction::new(
                             funct4, rd_rs1, rs2, op, c_jalr,
@@ -710,18 +718,9 @@ impl RVCore {
 
     pub fn check_int_to_m(&self, int: InterruptType) -> bool {
         let mstatus = self.control_and_status.read_mstatus_unchecked();
-        let mip = self
-            .control_and_status
-            .read_csr(ControlAndStatus::MIP, PrivilegeLevel::Machine)
-            .unwrap();
-        let mie = self
-            .control_and_status
-            .read_csr(ControlAndStatus::MIE, PrivilegeLevel::Machine)
-            .unwrap();
-        let mideleg = self
-            .control_and_status
-            .read_csr(ControlAndStatus::MIDELEG, PrivilegeLevel::Machine)
-            .unwrap();
+        let mip = self.control_and_status.read_mip_unchecked();
+        let mie = self.control_and_status.read_mie_unchecked();
+        let mideleg = self.control_and_status.read_mideleg_unchecked();
 
         ((self.privilege_level == PrivilegeLevel::Machine && mstatus.get_mie())
             || (self.privilege_level as u32) < (PrivilegeLevel::Machine as u32))
@@ -731,18 +730,23 @@ impl RVCore {
 
     pub fn check_int_to_s(&self, int: InterruptType) -> bool {
         let sstatus = self.control_and_status.read_sstatus_unchecked();
-        let sip = self
-            .control_and_status
-            .read_csr(ControlAndStatus::SIP, PrivilegeLevel::Machine)
-            .unwrap();
-        let sie = self
-            .control_and_status
-            .read_csr(ControlAndStatus::SIE, PrivilegeLevel::Machine)
-            .unwrap();
+        let sip = self.control_and_status.read_sie_unchecked();
+        let sie = self.control_and_status.read_sip_unchecked();
 
         ((self.privilege_level == PrivilegeLevel::Supervisor && sstatus.get_sie())
             || (self.privilege_level as u32) < (PrivilegeLevel::Supervisor as u32))
             && (((sip & sie) & (1 << (int as u32))) > 0)
+    }
+
+    pub fn check_pmp(
+        &self,
+        phys_address: PhysicalAddress,
+        priv_level: PrivilegeLevel,
+        access_type: &AccessType,
+        access_length: u64,
+    ) -> Result<PhysicalAddress, ExceptionType> {
+        self.control_and_status
+            .check_pmp(phys_address, priv_level, access_type, access_length)
     }
 }
 
@@ -1390,14 +1394,14 @@ pub enum ExceptionType {
 
     #[cfg(feature = "hitf")]
     HitfSyscall = 24,
-    #[cfg(feature = "hitf")]
-    HitfExit = 25,
+    #[cfg(any(feature = "hitf", feature = "semihosting"))]
+    ExitException = 25,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct Exception {
     pub exc_type: ExceptionType,
-    val: u32,
+    pub val: u32,
 }
 
 impl Trap for Exception {
@@ -1414,14 +1418,8 @@ impl Trap for Exception {
         let cause = self.get_cause();
 
         let delegated = {
-            let medelegl = core
-                .control_and_status
-                .read_csr(ControlAndStatus::MEDELEG, PrivilegeLevel::Machine)
-                .unwrap();
-            let medelegh = core
-                .control_and_status
-                .read_csr(ControlAndStatus::MEDELEGH, PrivilegeLevel::Machine)
-                .unwrap();
+            let medelegl = core.control_and_status.read_medeleg_unchecked();
+            let medelegh = core.control_and_status.read_medelegh_unchecked();
             let medeleg = ((medelegh as u64) << 32) | (medelegl as u64);
 
             ((1 << cause) & medeleg) > 0
@@ -1447,17 +1445,23 @@ impl Exception {
 }
 
 pub trait WithErrVal<T> {
-    fn with_err_val(self, val: u32) -> Self;
+    fn with_err_val(self, val: u32) -> Result<T, Exception>;
 }
 
 impl<T> WithErrVal<T> for Result<T, Exception> {
-    fn with_err_val(self, val: u32) -> Self {
+    fn with_err_val(self, val: u32) -> Result<T, Exception> {
         self.map_err(|mut e| {
             if e.val == 0 {
                 e.val = val;
             }
             e
         })
+    }
+}
+
+impl<T> WithErrVal<T> for Result<T, ExceptionType> {
+    fn with_err_val(self, val: u32) -> Result<T, Exception> {
+        self.map_err(|exc_type| Exception::new(exc_type, val))
     }
 }
 
@@ -1537,10 +1541,7 @@ fn handle_machine_trap(trap: &impl Trap, core: &mut RVCore, cause: u32) {
         .write_csr(ControlAndStatus::MSTATUS, core.privilege_level, mstatus.0)
         .unwrap();
 
-    let mtvec = core
-        .control_and_status
-        .read_csr(ControlAndStatus::MTVEC, core.privilege_level)
-        .unwrap();
+    let mtvec = core.control_and_status.read_mtvec_unchecked();
     let base = mtvec & 0xFFFFFFFC;
 
     if trap.is_int() {
@@ -1581,10 +1582,7 @@ fn handle_supervisor_trap(trap: &impl Trap, core: &mut RVCore, cause: u32) {
         .write_csr(ControlAndStatus::SSTATUS, core.privilege_level, sstatus.0)
         .unwrap();
 
-    let stvec = core
-        .control_and_status
-        .read_csr(ControlAndStatus::STVEC, core.privilege_level)
-        .unwrap();
+    let stvec = core.control_and_status.read_stvec_unchecked();
     let base = stvec & 0xFFFFFFFC;
 
     if trap.is_int() {
