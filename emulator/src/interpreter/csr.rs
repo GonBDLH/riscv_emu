@@ -1,9 +1,9 @@
-use crate::interpreter::{
-    bus::{Bus, RTC_BASE},
+use crate::{interpreter::{
+    bus::Bus,
     pmp::PmpCsrs,
     riscv_core::{ExceptionType, PrivilegeLevel},
     virtual_memory::sv32::{AccessType, PhysicalAddress},
-};
+}, peripherals::RTC_BASE};
 use bitfield::bitfield;
 
 pub struct ControlAndStatus {
@@ -12,6 +12,7 @@ pub struct ControlAndStatus {
     // mstatus: MStatus,
     // satp: Satp32,
     minstret_loaded: bool,
+    minstret: u64,
     cycle: u64,
 }
 
@@ -46,15 +47,17 @@ impl ControlAndStatus {
     // COUNTER/TIMERS
     const MCYCLE: usize = 0xB00;
     const MINSTRET: usize = 0xB02;
-    const MHPCOUNTER3: usize = 0xB03; // MAX 31 (-3)
-    const MHPCOUNTER31: usize = 0xB1F;
+    const MHPMCOUNTER3: usize = 0xB03; // MAX 31 (-3)
+    const MHPMCOUNTER31: usize = 0xB1F;
     const MCYCLEH: usize = 0xB80;
     const MINSTRETH: usize = 0xB82;
-    const MHPCOUNTER3H: usize = 0xB83; // MAX 31 (-3)
-    const MHPCOUNTER31H: usize = 0xB9F; // MAX 31 (-3)
+    const MHPMCOUNTER3H: usize = 0xB83; // MAX 31 (-3)
+    const MHPMCOUNTER31H: usize = 0xB9F; // MAX 31 (-3)
 
     const MENVCFG: usize = 0x30A;
     const MENVCFGH: usize = 0x31A;
+
+    const MCOUNTINHIBIT: usize = 0x320;
 
     const PMPCFG0: usize = 0x3A0;
     const PMPCFG15: usize = 0x3AF;
@@ -126,6 +129,7 @@ impl ControlAndStatus {
             csrs,
             pmp: PmpCsrs::default(),
             minstret_loaded: false,
+            minstret: 0,
             cycle: 0
         }
     }
@@ -171,12 +175,14 @@ impl ControlAndStatus {
             Self::MENVCFG => self.csrs[csr] & Self::MENVCFG_MASK,
             Self::MENVCFGH => self.csrs[csr] & Self::MENVCFGH_MASK,
 
+            Self::MCOUNTINHIBIT => self.csrs[csr],
+
             Self::MCYCLE => self.csrs[csr],
-            Self::MINSTRET => self.csrs[csr],
-            Self::MHPCOUNTER3..Self::MHPCOUNTER31 => self.csrs[csr],
+            Self::MINSTRET => self.minstret as u32,
+            Self::MHPMCOUNTER3..Self::MHPMCOUNTER31 => self.csrs[csr],
             Self::MCYCLEH => self.csrs[csr],
-            Self::MINSTRETH => self.csrs[csr],
-            Self::MHPCOUNTER3H..Self::MHPCOUNTER31H => self.csrs[csr],
+            Self::MINSTRETH => (self.minstret >> 32) as u32,
+            Self::MHPMCOUNTER3H..Self::MHPMCOUNTER31H => self.csrs[csr],
 
             Self::PMPCFG0..=Self::PMPCFG15 => self.pmp.get_pmp_cfg(csr - Self::PMPCFG0),
             Self::PMPADDR0..=Self::PMPADDR63 => self.pmp.get_pmp_addr(csr - Self::PMPADDR0),
@@ -207,14 +213,14 @@ impl ControlAndStatus {
 
             Self::CYCLE => self.cycle as u32,
             Self::TIME => bus.read_word(&PhysicalAddress(RTC_BASE as u64)).unwrap(),
-            Self::INSTRET => self.csrs[Self::MINSTRET],
+            Self::INSTRET => self.minstret as u32,
             Self::HPMCOUNTER3..=Self::HPMCOUNTER31 => {
-                let csr = (csr - Self::HPMCOUNTER3) + Self::MHPCOUNTER3;
+                let csr = (csr - Self::HPMCOUNTER3) + Self::MHPMCOUNTER3;
                 self.csrs[csr]
             },
             Self::CYCLEH => (self.cycle >> 32) as u32,
             Self::TIMEH => bus.read_word(&PhysicalAddress(RTC_BASE as u64 + 4)).unwrap(),
-            Self::INSTRETH => self.csrs[Self::MINSTRETH],
+            Self::INSTRETH => (self.minstret >> 32) as u32,
             Self::HPMCOUNTER3H..=Self::HPMCOUNTER31H => self.csrs[csr],
 
             _ => {
@@ -326,7 +332,6 @@ impl ControlAndStatus {
                 self.csrs[Self::MSTATUS] =
                     (self.csrs[Self::MSTATUS] & !Self::SSTATUS_MASK) | (val & Self::SSTATUS_MASK)
             }
-            Self::SIE => self.csrs[Self::SIE] = val,
             Self::STVEC => self.csrs[Self::STVEC] = val,
             Self::SCOUNTEREN => self.csrs[Self::SCOUNTEREN] = val,
             Self::SENVCFG => self.csrs[Self::SENVCFG] = val & Self::SENVCFG_MASK,
@@ -335,14 +340,27 @@ impl ControlAndStatus {
 
             Self::MSTATUS => self.csrs[Self::MSTATUS] = Self::MSTATUS_MASK & val,
             Self::MEDELEG => self.csrs[Self::MEDELEG] = val,
-            Self::MEDELEGH => self.csrs[Self::MEDELEGH] = val,
+            Self::MIDELEG => self.csrs[Self::MIDELEG] = val,
+            Self::MIE => self.csrs[Self::MIE] = val & Self::MIE_MASK,
             Self::MTVEC => self.csrs[Self::MTVEC] = val,
+            Self::MSTATUSH => self.csrs[Self::MSTATUSH] = val & Self::MSTATUSH_MASK,
+            Self::MEDELEGH => self.csrs[Self::MEDELEGH] = val,
 
             Self::MIP => self.csrs[Self::MIP] = val & Self::MIP_MASK,
 
-            Self::MINSTRET | Self::MINSTRETH => {
+            // Self::MINSTRET | Self::MINSTRETH => {
+            //     self.minstret_loaded = true;
+            //     self.csrs[csr] = val;
+            // }
+            Self::MINSTRET => {
                 self.minstret_loaded = true;
-                self.csrs[csr] = val;
+                self.minstret &= 0xFFFFFFFF00000000;
+                self.minstret |= val as u64;
+            }
+            Self::MINSTRETH => {
+                self.minstret_loaded = true;
+                self.minstret &= 0xFFFFFFFF00000000;
+                self.minstret |= (val as u64) << 32;
             }
             Self::MEPC => self.csrs[Self::MEPC] = val & 0xFFFFFFFE,
             Self::MISA => {
@@ -356,8 +374,17 @@ impl ControlAndStatus {
 
             Self::MENVCFG => self.csrs[csr] = val & Self::MENVCFG_MASK,
             Self::MENVCFGH => self.csrs[csr] = val & Self::MENVCFGH_MASK,
+
+            Self::MCOUNTINHIBIT => self.csrs[csr] = val,
+
             Self::PMPCFG0..=Self::PMPCFG15 => self.pmp.set_pmp_cfg(csr - Self::PMPCFG0, val),
             Self::PMPADDR0..=Self::PMPADDR63 => self.pmp.set_pmp_addr(csr - Self::PMPADDR0, val),
+
+            Self::SEPC => self.csrs[csr] = val,
+            Self::SCAUSE => self.csrs[csr] = val,
+            Self::STVAL => self.csrs[csr] = val,
+            Self::SIP => self.csrs[csr] = val & Self::SIP_MASK,
+            Self::SIE => self.csrs[csr] = val & Self::SIE_MASK,
 
             Self::SATP => {
                 let mstatus = self.read_mstatus_unchecked();
@@ -384,14 +411,7 @@ impl ControlAndStatus {
             return;
         }
 
-        let minstret = self.csrs[Self::MINSTRET];
-        let minstreth = self.csrs[Self::MINSTRETH];
-
-        let minsret_64 = (minstret as u64) + ((minstreth as u64) << 32);
-        let new_minstret = minsret_64.wrapping_add(1);
-
-        self.csrs[Self::MINSTRET] = new_minstret as u32;
-        self.csrs[Self::MINSTRETH] = (new_minstret >> 32) as u32;
+        self.minstret = self.minstret.wrapping_add(1);
     }
 
     pub fn set_mip_bit(&mut self, bit: u32) {
@@ -402,7 +422,7 @@ impl ControlAndStatus {
         &self,
         phys_address: PhysicalAddress,
         priv_level: PrivilegeLevel,
-        access_type: &AccessType,
+        access_type: AccessType,
         access_length: u64,
     ) -> Result<PhysicalAddress, ExceptionType> {
         if self

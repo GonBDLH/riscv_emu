@@ -4,7 +4,7 @@
 use crate::interpreter::hitf::HitfState;
 use crate::{
     interpreter::{NUM_HARTS, riscv_core::ExceptionType, virtual_memory::sv32::{AccessType, PhysicalAddress}},
-    peripherals::{Peripheral, timer::RealTimeCounter, uart_16550::Uart16550},
+    peripherals::{Mmio, RTC_BASE, RTC_END, UART_BASE, UART_END},
 };
 
 pub const DRAM_BASE: usize = 0x80000000;
@@ -15,20 +15,17 @@ pub const ROM_BASE: usize = 0x00001000;
 pub const ROM_SIZE: usize = 0x00001000;
 pub const ROM_END: usize = ROM_BASE + ROM_SIZE;
 
-pub const RTC_BASE: usize = 0x00101000;
-pub const RTC_SIZE: usize = 0x1000;
-pub const RTC_END: usize = RTC_BASE + RTC_SIZE;
-
-pub const UART_BASE: usize = 0x10000000;
-pub const UART_SIZE: usize = 0x100;
-pub const UART_END: usize = UART_BASE + UART_SIZE;
+pub const MMIO_BASE: usize = 0x02000000;
+pub const MMIO_SIZE: usize = 0x10000000;
+pub const MMIO_END: usize = MMIO_BASE + MMIO_SIZE;
 
 pub struct Bus {
     pub dram: Vec<u8>,
 
     rom: Vec<u8>,
-    pub uart: Uart16550,
-    pub timer: RealTimeCounter,
+    // pub uart: Uart16550,
+    // pub timer: RealTimeCounter,
+    pub mmio: Mmio,
 
     #[cfg(feature = "hitf")]
     pub hitf: HitfState,
@@ -42,8 +39,9 @@ impl Default for Bus {
         Self {
             dram: vec![0x00; DRAM_SIZE],
             rom: vec![0x00; ROM_SIZE],
-            uart: Uart16550::new(),
-            timer: RealTimeCounter::new(),
+            // uart: Uart16550::new(),
+            // timer: RealTimeCounter::new(),
+            mmio: Mmio::new(),
             reserved_addresses: [None],
 
             #[cfg(feature = "hitf")]
@@ -70,8 +68,7 @@ impl Bus {
                 Ok(self.dram[address - DRAM_BASE])
             }
             ROM_BASE..ROM_END => Ok(self.rom[address - ROM_BASE]),
-            UART_BASE..UART_END => Ok(self.uart.read_byte(address - UART_BASE)),
-            RTC_BASE..RTC_END => Ok(self.timer.read_byte(address - RTC_BASE)),
+            MMIO_BASE..MMIO_END => Ok(self.mmio.read_byte(address)),
             _ => Err(ExceptionType::LoadAccessFault),
         }
     }
@@ -109,12 +106,8 @@ impl Bus {
 
                 Ok(())
             }
-            UART_BASE..UART_END => {
-                self.uart.write_byte(address - UART_BASE, val);
-                Ok(())
-            }
-            RTC_BASE..RTC_END => {
-                self.timer.write_byte(address - RTC_BASE, val);
+            MMIO_BASE..MMIO_END => {
+                self.mmio.write_byte(address, val);
                 Ok(())
             }
 

@@ -17,7 +17,9 @@ pub fn csrrw(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(
 
     core.control_and_status
         .write_csr(csr, core.privilege_level, rs1_val)
-        .with_err_val(core.pc)?;
+        .with_err_val(instr.data)?;
+
+    core.inc_pc(4);
 
     Ok(())
 }
@@ -34,9 +36,11 @@ pub fn csrrs(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(
         let new_csr = old_csr | rs1_val;
         core.control_and_status
             .write_csr(csr, core.privilege_level, new_csr)
-            .with_err_val(core.pc)?;
+            .with_err_val(instr.data)?;
     }
     core.write_reg(instr.rd, old_csr);
+
+    core.inc_pc(4);
 
     Ok(())
 }
@@ -54,9 +58,11 @@ pub fn csrrc(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(
         let new_csr = old_csr & !rs1_val;
         core.control_and_status
             .write_csr(csr, core.privilege_level, new_csr)
-            .with_err_val(core.pc)?;
+            .with_err_val(instr.data)?;
     }
     core.write_reg(instr.rd, old_csr);
+
+    core.inc_pc(4);
 
     Ok(())
 }
@@ -75,7 +81,9 @@ pub fn csrrwi(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<
 
     core.control_and_status
         .write_csr(csr, core.privilege_level, imm_val)
-        .with_err_val(core.pc)?;
+        .with_err_val(instr.data)?;
+
+    core.inc_pc(4);
 
     Ok(())
 }
@@ -94,8 +102,10 @@ pub fn csrrsi(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<
         let new_csr = old_csr | imm_val;
         core.control_and_status
             .write_csr(csr, core.privilege_level, new_csr)
-            .with_err_val(core.pc)?;
+            .with_err_val(instr.data)?;
     }
+
+    core.inc_pc(4);
 
     Ok(())
 }
@@ -114,8 +124,10 @@ pub fn csrrci(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<
         let new_csr = old_csr & !imm_val;
         core.control_and_status
             .write_csr(csr, core.privilege_level, new_csr)
-            .with_err_val(core.pc)?;
+            .with_err_val(instr.data)?;
     }
+
+    core.inc_pc(4);
 
     Ok(())
 }

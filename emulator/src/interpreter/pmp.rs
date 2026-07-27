@@ -54,7 +54,7 @@ impl PmpCsrs {
     pub fn has_access(
         &self,
         priv_level: PrivilegeLevel,
-        access_type: &AccessType,
+        access_type: AccessType,
         address: &PhysicalAddress,
         access_length: u64,
     ) -> bool {
@@ -126,7 +126,7 @@ impl PmpCfgEntry {
         }
     }
 
-    fn check_access(&self, priv_level: PrivilegeLevel, access_type: &AccessType) -> bool {
+    fn check_access(&self, priv_level: PrivilegeLevel, access_type: AccessType) -> bool {
         match access_type {
             AccessType::Load => Self::check_rwx(priv_level, self.get_r(), self.get_l()),
             AccessType::StoreAmo => Self::check_rwx(priv_level, self.get_w(), self.get_l()),

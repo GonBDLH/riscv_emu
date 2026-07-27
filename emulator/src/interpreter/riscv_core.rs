@@ -21,6 +21,8 @@ pub struct RVCore {
 
     hart_id: u32,
     pub stalled: bool,
+
+    pub new_pc: u32,
 }
 
 impl Default for RVCore {
@@ -34,6 +36,8 @@ impl Default for RVCore {
 
             hart_id: 0,
             stalled: false,
+
+            new_pc: 0
         }
     }
 }
@@ -742,11 +746,23 @@ impl RVCore {
         &self,
         phys_address: PhysicalAddress,
         priv_level: PrivilegeLevel,
-        access_type: &AccessType,
+        access_type: AccessType,
         access_length: u64,
     ) -> Result<PhysicalAddress, ExceptionType> {
         self.control_and_status
             .check_pmp(phys_address, priv_level, access_type, access_length)
+    }
+
+    pub fn update_pc(&mut self) {
+        self.pc = self.new_pc;
+    }
+
+    pub fn inc_pc(&mut self, bytes: u32) {
+        self.new_pc = self.pc.wrapping_add(bytes);
+    }
+
+    pub fn set_pc(&mut self, new_pc: u32) {
+        self.new_pc = new_pc;
     }
 }
 
@@ -1422,7 +1438,7 @@ impl Trap for Exception {
             let medelegh = core.control_and_status.read_medelegh_unchecked();
             let medeleg = ((medelegh as u64) << 32) | (medelegl as u64);
 
-            ((1 << cause) & medeleg) > 0
+            ((medeleg >> cause) & 1u64) != 0
         };
         let handle_machine = !delegated || (prev_priv_level == PrivilegeLevel::Machine);
 
@@ -1548,12 +1564,12 @@ fn handle_machine_trap(trap: &impl Trap, core: &mut RVCore, cause: u32) {
         let cause = cause & !(1 << 31);
 
         if mtvec & 0b11 == 1 {
-            core.pc = base + 4 * cause;
+            core.set_pc(base + 4 * cause);
         } else {
-            core.pc = base;
+            core.set_pc(base);
         }
     } else {
-        core.pc = base;
+        core.set_pc(base);
     }
 }
 
@@ -1589,11 +1605,11 @@ fn handle_supervisor_trap(trap: &impl Trap, core: &mut RVCore, cause: u32) {
         let cause = cause & !(1 << 31);
 
         if stvec & 0b11 == 1 {
-            core.pc = base + 4 * cause;
+            core.set_pc(base + 4 * cause);
         } else {
-            core.pc = base;
+            core.set_pc(base);
         }
     } else {
-        core.pc = base;
+        core.set_pc(base);
     }
 }

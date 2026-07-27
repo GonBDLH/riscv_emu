@@ -20,6 +20,8 @@ pub fn c_lwsp(instr: &CIInstruction, bus: &mut Bus, core: &mut RVCore) -> Result
 
     core.write_reg(instr.rd_rs1 as u32, val);
 
+    core.inc_pc(2);
+
     Ok(())
 }
 
@@ -33,6 +35,8 @@ pub fn c_swsp(instr: &CSSInstruction, bus: &mut Bus, core: &mut RVCore) -> Resul
 
     bus.write_aligned_word(&phys_address, core.read_reg(instr.rs2 as u32))
         .with_err_val(address)?;
+
+    core.inc_pc(2);
 
     Ok(())
 }
@@ -52,6 +56,8 @@ pub fn c_lw(instr: &CLInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(
 
     core.write_reg(instr.rd_p as u32 + 8, val);
 
+    core.inc_pc(2);
+
     Ok(())
 }
 
@@ -68,6 +74,8 @@ pub fn c_sw(instr: &CSInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(
 
     bus.write_aligned_word(&phys_address, core.read_reg(instr.rs2_p as u32 + 8))
         .with_err_val(address)?;
+
+    core.inc_pc(2);
 
     Ok(())
 }
@@ -92,7 +100,8 @@ pub fn c_j(instr: &CJInstruction, core: &mut RVCore) -> Result<(), Exception> {
 
     let sign_extended = sign_extend16to32(jump_target, 12);
     let val = core.pc.wrapping_add(sign_extended);
-    core.pc = val.wrapping_sub(2);
+
+    core.set_pc(val);
 
     Ok(())
 }
@@ -119,7 +128,8 @@ pub fn c_jal(instr: &CJInstruction, core: &mut RVCore) -> Result<(), Exception> 
     let val = core.pc.wrapping_add(sign_extended);
 
     core.write_reg(1, core.pc.wrapping_add(2));
-    core.pc = val.wrapping_sub(2);
+
+    core.set_pc(val);
 
     Ok(())
 }
@@ -127,7 +137,7 @@ pub fn c_jal(instr: &CJInstruction, core: &mut RVCore) -> Result<(), Exception> 
 pub fn c_jr(instr: &CRInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let address = core.read_reg(instr.rd_rs1 as u32) & !0b1;
 
-    core.pc = address.wrapping_sub(2);
+    core.set_pc(address);
 
     Ok(())
 }
@@ -136,8 +146,9 @@ pub fn c_jalr(instr: &CRInstruction, core: &mut RVCore) -> Result<(), Exception>
     let val = core.read_reg(instr.rd_rs1 as u32) & !0b1;
     let prev_pc = core.pc;
 
-    core.pc = val.wrapping_sub(2);
     core.write_reg(1, prev_pc.wrapping_add(2));
+
+    core.set_pc(val);
 
     Ok(())
 }
@@ -155,7 +166,9 @@ pub fn c_beqz(instr: &CBInstruction, core: &mut RVCore) -> Result<(), Exception>
     let val = core.pc.wrapping_add(sign_extended);
 
     if core.read_reg(instr.rd_rs1_p as u32 + 8) == 0 {
-        core.pc = val.wrapping_sub(2);
+        core.set_pc(val);
+    } else {
+        core.inc_pc(2);
     }
 
     Ok(())
@@ -174,7 +187,9 @@ pub fn c_benz(instr: &CBInstruction, core: &mut RVCore) -> Result<(), Exception>
     let val = core.pc.wrapping_add(sign_extended);
 
     if core.read_reg(instr.rd_rs1_p as u32 + 8) != 0 {
-        core.pc = val.wrapping_sub(2);
+        core.set_pc(val);
+    } else {
+        core.inc_pc(2);
     }
 
     Ok(())
@@ -186,6 +201,8 @@ pub fn c_li(instr: &CIInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(),
 
     core.write_reg(instr.rd_rs1 as u32, sign_extended);
 
+    core.inc_pc(2);
+
     Ok(())
 }
 
@@ -196,6 +213,8 @@ pub fn c_lui(instr: &CIInstruction, _: &mut Bus, core: &mut RVCore) -> Result<()
     let sign_extended = sign_extend32to32(val, 18);
 
     core.write_reg(instr.rd_rs1 as u32, sign_extended);
+
+    core.inc_pc(2);
 
     Ok(())
 }
@@ -210,10 +229,14 @@ pub fn c_addi(instr: &CIInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(
 
     core.write_reg(instr.rd_rs1 as u32, val);
 
+    core.inc_pc(2);
+
     Ok(())
 }
 
-pub fn c_nop(_: &CIInstruction, _: &mut Bus, _: &mut RVCore) -> Result<(), Exception> {
+pub fn c_nop(_: &CIInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
+    core.inc_pc(2);
+
     Ok(())
 }
 
@@ -230,6 +253,8 @@ pub fn c_addi16sp(instr: &CIInstruction, _: &mut Bus, core: &mut RVCore) -> Resu
     let val = core.read_reg(2);
     core.write_reg(2, val.wrapping_add(sign_extended));
 
+    core.inc_pc(2);
+
     Ok(())
 }
 
@@ -242,6 +267,8 @@ pub fn c_addi4spn(instr: &CIWInstruction, _: &mut Bus, core: &mut RVCore) -> Res
 
     core.write_reg(instr.rd_p as u32 + 8, core.read_reg(2).wrapping_add(nzuimm));
 
+    core.inc_pc(2);
+
     Ok(())
 }
 
@@ -250,6 +277,8 @@ pub fn c_slli(instr: &CIInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(
 
     let val = core.read_reg(instr.rd_rs1 as u32);
     core.write_reg(instr.rd_rs1 as u32, val.wrapping_shl(shamt as u32));
+
+    core.inc_pc(2);
 
     Ok(())
 }
@@ -261,6 +290,8 @@ pub fn c_srli(instr: &CBInstruction, core: &mut RVCore) -> Result<(), Exception>
     let val = core.read_reg(instr.rd_rs1_p as u32 + 8);
     core.write_reg(instr.rd_rs1_p as u32 + 8, val.wrapping_shr(shamt as u32));
 
+    core.inc_pc(2);
+
     Ok(())
 }
 
@@ -271,6 +302,8 @@ pub fn c_srai(instr: &CBInstruction, core: &mut RVCore) -> Result<(), Exception>
     let val = (core.read_reg(instr.rd_rs1_p as u32 + 8) as i32).wrapping_shr(shamt as u32) as u32;
 
     core.write_reg(instr.rd_rs1_p as u32 + 8, val);
+
+    core.inc_pc(2);
 
     Ok(())
 }
@@ -284,12 +317,16 @@ pub fn c_andi(instr: &CBInstruction, core: &mut RVCore) -> Result<(), Exception>
 
     core.write_reg(instr.rd_rs1_p as u32 + 8, val & sign_extended);
 
+    core.inc_pc(2);
+
     Ok(())
 }
 
 pub fn c_mv(instr: &CRInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let val = core.read_reg(instr.rs2 as u32);
     core.write_reg(instr.rd_rs1 as u32, val);
+
+    core.inc_pc(2);
 
     Ok(())
 }
@@ -300,6 +337,8 @@ pub fn c_add(instr: &CRInstruction, core: &mut RVCore) -> Result<(), Exception> 
 
     core.write_reg(instr.rd_rs1 as u32, prev.wrapping_add(val));
 
+    core.inc_pc(2);
+
     Ok(())
 }
 
@@ -308,6 +347,8 @@ pub fn c_and(instr: &CAInstruction, core: &mut RVCore) -> Result<(), Exception> 
     let val = core.read_reg(instr.rs2_p as u32 + 8);
 
     core.write_reg(instr.rd_rs1_p as u32 + 8, prev & val);
+
+    core.inc_pc(2);
 
     Ok(())
 }
@@ -318,6 +359,8 @@ pub fn c_or(instr: &CAInstruction, core: &mut RVCore) -> Result<(), Exception> {
 
     core.write_reg(instr.rd_rs1_p as u32 + 8, prev | val);
 
+    core.inc_pc(2);
+
     Ok(())
 }
 
@@ -327,6 +370,8 @@ pub fn c_xor(instr: &CAInstruction, core: &mut RVCore) -> Result<(), Exception> 
 
     core.write_reg(instr.rd_rs1_p as u32 + 8, prev ^ val);
 
+    core.inc_pc(2);
+
     Ok(())
 }
 
@@ -335,6 +380,8 @@ pub fn c_sub(instr: &CAInstruction, core: &mut RVCore) -> Result<(), Exception> 
     let val = core.read_reg(instr.rs2_p as u32 + 8);
 
     core.write_reg(instr.rd_rs1_p as u32 + 8, prev.wrapping_sub(val));
+
+    core.inc_pc(2);
 
     Ok(())
 }

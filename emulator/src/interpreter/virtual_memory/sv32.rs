@@ -9,7 +9,7 @@ pub const PAGESIZE: u32 = 2u32.pow(12);
 pub const LEVELS: u32 = 2;
 pub const PTESIZE: u32 = 4;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum AccessType {
     Load,
     StoreAmo,
@@ -30,6 +30,14 @@ impl AccessType {
             AccessType::Load => ExceptionType::LoadAccessFault,
             AccessType::StoreAmo => ExceptionType::StoreAmoAccessFault,
             AccessType::Execute => ExceptionType::InstructionAccessFault,
+        }
+    }
+
+    pub fn get_address_missaligned_exception(&self) -> ExceptionType {
+        match self {
+            AccessType::Load => ExceptionType::LoadAddressMisaligned,
+            AccessType::StoreAmo => ExceptionType::StoreAmoAddressMisaligned,
+            AccessType::Execute => ExceptionType::InstructionAddressMisaligned,
         }
     }
 }
@@ -118,6 +126,13 @@ pub fn translate_address(
     access_type: AccessType,
     access_length: u64,
 ) -> Result<PhysicalAddress, Exception> {
+    if access_type != AccessType::Execute && virt_address % access_length as u32 != 0 {
+        return Err(Exception::new(
+            access_type.get_address_missaligned_exception(),
+            virt_address,
+        ));
+    }
+
     let mstatus = core.control_and_status.read_mstatus_unchecked();
 
     if core.privilege_level == PrivilegeLevel::Machine {
@@ -130,7 +145,7 @@ pub fn translate_address(
                 core,
                 bus,
                 virt_address,
-                &access_type,
+                access_type,
                 effective_priv,
                 access_length,
             )
@@ -138,7 +153,7 @@ pub fn translate_address(
             core.check_pmp(
                 PhysicalAddress(virt_address as u64),
                 core.privilege_level,
-                &access_type,
+                access_type,
                 access_length,
             )
             .with_err_val(virt_address)
@@ -148,7 +163,7 @@ pub fn translate_address(
             core,
             bus,
             virt_address,
-            &access_type,
+            access_type,
             core.privilege_level,
             access_length,
         )
@@ -159,7 +174,7 @@ fn translate(
     core: &mut RVCore,
     bus: &mut Bus,
     virt_address: u32,
-    access_type: &AccessType,
+    access_type: AccessType,
     effective_priv: PrivilegeLevel,
     access_length: u64,
 ) -> Result<PhysicalAddress, Exception> {
@@ -193,8 +208,15 @@ fn translate(
                 4,
             )
             .with_err_val(virt_address)?;
+        if !bus.check_pma(&pte_phys_address, access_type) {
+            return Err(Exception::new(
+                access_type.get_page_fault_exception(),
+                virt_address,
+            ));
+        }
+
         let pte = PageTableEntry(
-            bus.read_word(&pte_phys_address)
+            bus.read_aligned_word(&pte_phys_address)
                 .with_err_val(virt_address)?,
         );
 
@@ -224,7 +246,7 @@ fn translate(
                 ));
             }
 
-            if !pte.get_a() || (*access_type == AccessType::StoreAmo && !pte.get_d()) {
+            if !pte.get_a() || (access_type == AccessType::StoreAmo && !pte.get_d()) {
                 let new_pte_phys_address = core
                     .check_pmp(
                         PhysicalAddress(pte_addr as u64),
@@ -233,14 +255,21 @@ fn translate(
                         4,
                     )
                     .with_err_val(virt_address)?;
+                if !bus.check_pma(&new_pte_phys_address, access_type) {
+                    return Err(Exception::new(
+                        access_type.get_access_fault_exception(),
+                        virt_address,
+                    ));
+                }
+
                 let mut new_pte = PageTableEntry(
-                    bus.read_word(&new_pte_phys_address)
+                    bus.read_aligned_word(&new_pte_phys_address)
                         .with_err_val(virt_address)?,
                 );
 
                 if new_pte.0 == pte.0 {
                     new_pte.set_a(true);
-                    if *access_type == AccessType::StoreAmo {
+                    if access_type == AccessType::StoreAmo {
                         new_pte.set_d(true);
                     }
 

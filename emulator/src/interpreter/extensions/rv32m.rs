@@ -6,6 +6,9 @@ pub fn mul(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
 
     let val = rs1_val.wrapping_mul(rs2_val);
     core.write_reg(instr.rd, val as u32);
+
+    core.inc_pc(4);
+
     Ok(())
 }
 
@@ -15,6 +18,9 @@ pub fn mulh(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
 
     let val = rs1_val.wrapping_mul(rs2_val);
     core.write_reg(instr.rd, (val >> 32) as u32);
+
+    core.inc_pc(4);
+
     Ok(())
 }
 
@@ -24,6 +30,9 @@ pub fn mulhsu(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> 
 
     let val = rs1_val.wrapping_mul(rs2_val);
     core.write_reg(instr.rd, (val >> 32) as u32);
+
+    core.inc_pc(4);
+
     Ok(())
 }
 
@@ -33,6 +42,9 @@ pub fn mulhu(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
 
     let val = rs1_val.wrapping_mul(rs2_val);
     core.write_reg(instr.rd, (val >> 32) as u32);
+
+    core.inc_pc(4);
+
     Ok(())
 }
 
@@ -49,6 +61,9 @@ pub fn div(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
     };
 
     core.write_reg(instr.rd, val as u32);
+
+    core.inc_pc(4);
+
     Ok(())
 }
 
@@ -63,6 +78,9 @@ pub fn divu(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
     };
 
     core.write_reg(instr.rd, val);
+
+    core.inc_pc(4);
+
     Ok(())
 }
 
@@ -79,6 +97,9 @@ pub fn rem(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
     };
 
     core.write_reg(instr.rd, val as u32);
+
+    core.inc_pc(4);
+
     Ok(())
 }
 
@@ -93,5 +114,8 @@ pub fn remu(instr: &RInstruction, core: &mut RVCore) -> Result<(), Exception> {
     };
 
     core.write_reg(instr.rd, val);
+
+    core.inc_pc(4);
+    
     Ok(())
 }

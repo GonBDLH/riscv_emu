@@ -21,14 +21,13 @@ use crate::{
         },
         virtual_memory::sv32::{AccessType, PhysicalAddress, translate_address},
     },
-    peripherals::Peripheral,
 };
 
 mod bus;
 mod csr;
 mod extensions;
 mod pmp;
-mod riscv_core;
+pub mod riscv_core;
 mod virtual_memory;
 
 #[cfg(feature = "semihosting")]
@@ -164,21 +163,35 @@ impl Interpreter {
 
     pub fn fetch(&mut self) -> Result<u32, Exception> {
         let pc = self.core.pc;
+
         // TODO Hay que cambiar esto para cuando se haga un fecth de 16 bits (C instr)
         let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute, 4)?;
+
+        if phys_pc.0 == 0x80008a90 {
+            println!("!");
+        }
+
+        if !self.bus.check_pma(&phys_pc, AccessType::Execute) {
+            return Err(Exception::new(AccessType::Execute.get_access_fault_exception(), pc));
+        }
 
         let val = self.bus.read_word(&phys_pc).with_err_val(pc)?;
 
         Ok(val)
     }
 
-    pub fn decode(&mut self, instr: u32) -> Option<InstructionType> {
+    pub fn decode(&mut self, instr: u32) -> Result<InstructionType, Exception> {
         let width_bits = instr & 0b11;
 
         if width_bits == 0b11 {
-            self.core.decode32(instr)
+            self.core
+                .decode32(instr)
+                .ok_or(Exception::new(ExceptionType::IllegalInstruction, instr))
         } else {
-            self.core.decode16(instr as u16)
+            self.core.decode16(instr as u16).ok_or(Exception::new(
+                ExceptionType::IllegalInstruction,
+                instr & 0x0000FFFF,
+            ))
         }
     }
 
@@ -213,9 +226,7 @@ impl Interpreter {
             }
         }
 
-        let instr = self
-            .decode(fetched)
-            .ok_or(Exception::new(ExceptionType::IllegalInstruction, fetched))?;
+        let instr = self.decode(fetched)?;
 
         #[cfg(feature = "hitf")]
         return {
@@ -243,7 +254,6 @@ impl Interpreter {
         instr.execute(&mut self.bus, &mut self.core)?;
 
         self.core.control_and_status.increment_minstret();
-        self.core.pc = self.core.pc.wrapping_add(instr.get_width());
 
         Ok(())
     }
@@ -271,17 +281,20 @@ impl Interpreter {
         };
 
         self.core.control_and_status.inc_cycle();
+        self.core.update_pc();
 
         None
     }
 
     pub fn update_peripherals(&mut self, duration: Duration) {
-        self.bus.timer.update(duration);
+        // TODO
 
-        if self.bus.timer.has_interrupt() {
+        self.bus.mmio.update(duration);
+
+        if let Some(int) = self.bus.mmio.has_interrupt() {
             self.core
                 .control_and_status
-                .set_mip_bit(InterruptType::MachineTimerInt as u32);
+                .set_mip_bit(int as u32);
         }
 
         // TODO let uart_int = self.bus.uart.has_interrupt();

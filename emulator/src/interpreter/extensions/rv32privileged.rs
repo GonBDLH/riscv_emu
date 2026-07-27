@@ -19,11 +19,11 @@ pub fn ebreak(_: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Ex
 }
 
 pub fn mret(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
-    core.pc = core
-        .control_and_status
-        .read_csr(bus, ControlAndStatus::MEPC, core.privilege_level)
-        .with_err_val(instr.data)?
-        .wrapping_sub(4);
+    core.set_pc(
+        core.control_and_status
+            .read_csr(bus, ControlAndStatus::MEPC, core.privilege_level)
+            .with_err_val(instr.data)?,
+    );
 
     let mut mstatus = core
         .control_and_status
@@ -52,11 +52,11 @@ pub fn mret(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<()
 
 // TODO SRET
 pub fn sret(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
-    core.pc = core
-        .control_and_status
-        .read_csr(bus, ControlAndStatus::SEPC, core.privilege_level)
-        .with_err_val(instr.data)?
-        .wrapping_sub(4);
+    core.set_pc(
+        core.control_and_status
+            .read_csr(bus, ControlAndStatus::SEPC, core.privilege_level)
+            .with_err_val(instr.data)?,
+    );
 
     let mut sstatus = core
         .control_and_status
@@ -110,6 +110,8 @@ pub fn sfence_vma(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Resul
         ));
     }
 
+    core.inc_pc(4);
+
     Ok(())
 }
 
@@ -121,6 +123,8 @@ pub fn wfi(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), E
             instr.data,
         ));
     }
+
+    core.inc_pc(4);
 
     // core.stalled = true;
 

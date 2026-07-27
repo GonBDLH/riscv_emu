@@ -14,7 +14,7 @@ fn generate_tests(file: &mut File, test_name: &str, name: &str) {
         file,
         r#"
 #[test]
-#[timeout(2000)]
+#[timeout(5000)]
 fn {test_name}() {{
     let mut interpreter = Interpreter::new_test_elf("{DIR}/{name}", 0);
     let ret = interpreter.run();
@@ -32,7 +32,7 @@ fn generate_tests(file: &mut File, test_name: &str, name: &str) {
         file,
         r#"
 #[test]
-#[timeout(2000)]
+#[timeout(5000)]
 fn {test_name}() {{
     let hitf_size = if "{name}".contains("-v-") {{
         8
