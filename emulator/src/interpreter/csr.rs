@@ -59,6 +59,9 @@ impl ControlAndStatus {
 
     const MCOUNTINHIBIT: usize = 0x320;
 
+    const MHPEVENT3: usize = 0x323;
+    const MHPEVENT31: usize = 0x33F;
+
     const PMPCFG0: usize = 0x3A0;
     const PMPCFG15: usize = 0x3AF;
     const PMPADDR0: usize = 0x3B0;
@@ -176,6 +179,8 @@ impl ControlAndStatus {
             Self::MENVCFGH => self.csrs[csr] & Self::MENVCFGH_MASK,
 
             Self::MCOUNTINHIBIT => self.csrs[csr],
+
+            Self::MHPEVENT3..=Self::MHPEVENT31 => self.csrs[csr],
 
             Self::MCYCLE => self.csrs[csr],
             Self::MINSTRET => self.minstret as u32,
@@ -376,6 +381,8 @@ impl ControlAndStatus {
             Self::MENVCFGH => self.csrs[csr] = val & Self::MENVCFGH_MASK,
 
             Self::MCOUNTINHIBIT => self.csrs[csr] = val,
+
+            Self::MHPEVENT3..=Self::MHPEVENT31 => self.csrs[csr] = val,
 
             Self::PMPCFG0..=Self::PMPCFG15 => self.pmp.set_pmp_cfg(csr - Self::PMPCFG0, val),
             Self::PMPADDR0..=Self::PMPADDR63 => self.pmp.set_pmp_addr(csr - Self::PMPADDR0, val),

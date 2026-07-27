@@ -5,6 +5,8 @@ use crate::interpreter::{
     virtual_memory::sv32::{AccessType, PhysicalAddress},
 };
 
+const PMPCFG_MASK: u32 = 0x9F9F9F9F;
+
 pub struct PmpCsrs {
     pmp_cfg: [u32; 16],
     pmp_addr: [u32; 64],
@@ -32,7 +34,7 @@ impl PmpCsrs {
 
     pub fn set_pmp_cfg(&mut self, pmp_csr: usize, val: u32) {
         assert!(pmp_csr < 16);
-        self.pmp_cfg[pmp_csr] = val;
+        self.pmp_cfg[pmp_csr] = val & PMPCFG_MASK;
     }
 
     pub fn set_pmp_addr(&mut self, pmp_csr: usize, val: u32) {
