@@ -99,7 +99,7 @@ pub fn c_j(instr: &CJInstruction, core: &mut RVCore) -> Result<(), Exception> {
         | (offset3_1 << 1);
 
     let sign_extended = sign_extend16to32(jump_target, 12);
-    let val = core.pc.wrapping_add(sign_extended);
+    let val = core.get_pc().wrapping_add(sign_extended);
 
     core.set_pc(val);
 
@@ -125,9 +125,9 @@ pub fn c_jal(instr: &CJInstruction, core: &mut RVCore) -> Result<(), Exception> 
         | (offset3_1 << 1);
 
     let sign_extended = sign_extend16to32(jump_target, 12);
-    let val = core.pc.wrapping_add(sign_extended);
+    let val = core.get_pc().wrapping_add(sign_extended);
 
-    core.write_reg(1, core.pc.wrapping_add(2));
+    core.write_reg(1, core.get_pc().wrapping_add(2));
 
     core.set_pc(val);
 
@@ -144,7 +144,7 @@ pub fn c_jr(instr: &CRInstruction, core: &mut RVCore) -> Result<(), Exception> {
 
 pub fn c_jalr(instr: &CRInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let val = core.read_reg(instr.rd_rs1 as u32) & !0b1;
-    let prev_pc = core.pc;
+    let prev_pc = core.get_pc();
 
     core.write_reg(1, prev_pc.wrapping_add(2));
 
@@ -163,7 +163,7 @@ pub fn c_beqz(instr: &CBInstruction, core: &mut RVCore) -> Result<(), Exception>
         (offset8 << 8) | (offset7_6 << 6) | (offset5 << 5) | (offset4_3 << 3) | (offset2_1 << 1);
 
     let sign_extended = sign_extend16to32(jump_target, 9);
-    let val = core.pc.wrapping_add(sign_extended);
+    let val = core.get_pc().wrapping_add(sign_extended);
 
     if core.read_reg(instr.rd_rs1_p as u32 + 8) == 0 {
         core.set_pc(val);
@@ -184,7 +184,7 @@ pub fn c_benz(instr: &CBInstruction, core: &mut RVCore) -> Result<(), Exception>
         (offset8 << 8) | (offset7_6 << 6) | (offset5 << 5) | (offset4_3 << 3) | (offset2_1 << 1);
 
     let sign_extended = sign_extend16to32(jump_target, 9);
-    let val = core.pc.wrapping_add(sign_extended);
+    let val = core.get_pc().wrapping_add(sign_extended);
 
     if core.read_reg(instr.rd_rs1_p as u32 + 8) != 0 {
         core.set_pc(val);

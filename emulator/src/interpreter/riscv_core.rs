@@ -13,7 +13,7 @@ use crate::interpreter::virtual_memory::sv32::PhysicalAddress;
 pub struct RVCore {
     // x0/zero -> Siempre 0
     pub registers: [u32; 32],
-    pub pc: u32,
+    pc: u32,
 
     pub control_and_status: ControlAndStatus,
 
@@ -43,6 +43,10 @@ impl Default for RVCore {
 }
 
 impl RVCore {
+    pub fn get_pc(&self) -> u32 {
+        self.pc
+    }
+
     pub fn decode32(&self, instr: u32) -> Option<InstructionType> {
         let opcode = instr & 0x7F;
 
@@ -1388,7 +1392,7 @@ pub trait Trap {
     fn is_int(&self) -> bool;
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ExceptionType {
     InstructionAddressMisaligned = 0,
     InstructionAccessFault = 1,

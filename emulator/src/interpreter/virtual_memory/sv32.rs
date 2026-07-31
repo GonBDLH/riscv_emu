@@ -9,7 +9,7 @@ pub const PAGESIZE: u32 = 2u32.pow(12);
 pub const LEVELS: u32 = 2;
 pub const PTESIZE: u32 = 4;
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum AccessType {
     Load,
     StoreAmo,
@@ -185,7 +185,14 @@ fn translate(
     }
 
     if effective_priv != PrivilegeLevel::Machine && !satp.get_mode() {
-        return Ok(PhysicalAddress(virt_address as u64));
+        return core
+            .check_pmp(
+                PhysicalAddress(virt_address as u64),
+                effective_priv,
+                access_type,
+                access_length,
+            )
+            .with_err_val(virt_address);
     }
 
     let va = VirtAddress(virt_address);

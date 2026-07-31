@@ -12,15 +12,15 @@ use crate::interpreter::hitf::HitfState;
 #[cfg(feature = "semihosting")]
 use crate::interpreter::semihosting::semihosting;
 
-use crate::{
-    interpreter::{
-        bus::Bus,
-        riscv_core::{
-            Exception, ExceptionType, InstructionType, Interrupt, InterruptType, RVCore, Trap,
-            WithErrVal,
-        },
-        virtual_memory::sv32::{AccessType, PhysicalAddress, translate_address},
+use crate::interpreter::{
+    bus::Bus,
+    csr::ControlAndStatus,
+    riscv_core::{
+        Exception, ExceptionType, InstructionType, Interrupt, InterruptType,
+        PrivilegeLevel::{self, Machine},
+        RVCore, Trap, WithErrVal,
     },
+    virtual_memory::sv32::{AccessType, PhysicalAddress, translate_address},
 };
 
 mod bus;
@@ -162,17 +162,16 @@ impl Interpreter {
     }
 
     pub fn fetch(&mut self) -> Result<u32, Exception> {
-        let pc = self.core.pc;
+        let pc = self.core.get_pc();
 
         // TODO Hay que cambiar esto para cuando se haga un fecth de 16 bits (C instr)
         let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute, 4)?;
 
-        if phys_pc.0 == 0x800000b8 {
-            println!("!");
-        }
-
         if !self.bus.check_pma(&phys_pc, AccessType::Execute) {
-            return Err(Exception::new(AccessType::Execute.get_access_fault_exception(), pc));
+            return Err(Exception::new(
+                AccessType::Execute.get_access_fault_exception(),
+                pc,
+            ));
         }
 
         let val = self.bus.read_word(&phys_pc).with_err_val(pc)?;
@@ -208,19 +207,19 @@ impl Interpreter {
             if fetched == 0x01f01013 {
                 use crate::interpreter::riscv_core::WithErrVal;
 
-                let address = PhysicalAddress(self.core.pc as u64 + 4);
+                let address = PhysicalAddress(self.core.get_pc() as u64 + 4);
                 let break_instr = self
                     .bus
                     .read_word(&address)
                     .with_err_val(address.0 as u32)?;
-                let address = PhysicalAddress(self.core.pc as u64 + 8);
+                let address = PhysicalAddress(self.core.get_pc() as u64 + 8);
                 let exit = self
                     .bus
                     .read_word(&address)
                     .with_err_val(address.0 as u32)?;
 
                 if break_instr == 0x00100073 && exit == 0x40705013 {
-                    self.core.pc = self.core.pc.wrapping_add(12);
+                    self.core.new_pc = self.core.get_pc().wrapping_add(12);
                     return semihosting(self.core.read_reg(10), self.core.read_reg(11));
                 }
             }
@@ -292,9 +291,7 @@ impl Interpreter {
         self.bus.mmio.update(duration);
 
         if let Some(int) = self.bus.mmio.has_interrupt() {
-            self.core
-                .control_and_status
-                .set_mip_bit(int as u32);
+            self.core.control_and_status.set_mip_bit(int as u32);
         }
 
         // TODO let uart_int = self.bus.uart.has_interrupt();

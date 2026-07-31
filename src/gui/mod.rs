@@ -140,7 +140,7 @@ impl eframe::App for GuiState {
                         if ui.add_enabled(!self.running, reset_button).clicked() {
                             self.cmd_sender.send(Command::Reset).unwrap();
                         }
-                        ui.label(format!("{:08X}", interp.core.pc));
+                        ui.label(format!("{:08X}", interp.core.get_pc()));
                     });
 
                     ui.vertical(|ui| {

@@ -3,7 +3,11 @@
 #[cfg(feature = "hitf")]
 use crate::interpreter::hitf::HitfState;
 use crate::{
-    interpreter::{NUM_HARTS, riscv_core::ExceptionType, virtual_memory::sv32::{AccessType, PhysicalAddress}},
+    interpreter::{
+        NUM_HARTS,
+        riscv_core::ExceptionType,
+        virtual_memory::sv32::{AccessType, PhysicalAddress},
+    },
     peripherals::{Mmio, RTC_BASE, RTC_END, UART_BASE, UART_END},
 };
 
@@ -170,7 +174,7 @@ impl Bus {
     pub fn write_aligned_word(
         &mut self,
         phys_address: &PhysicalAddress,
-        word: u32,
+        word: u32
     ) -> Result<(), ExceptionType> {
         if phys_address.0 % 4 != 0 {
             return Err(ExceptionType::StoreAmoAddressMisaligned);
@@ -190,17 +194,11 @@ impl Bus {
 
         // TODO Queda usar access_type
         match address {
-            DRAM_BASE..DRAM_END => {
-                true
-            }
-            UART_BASE..UART_END => {
-                true
-            }
-            RTC_BASE..RTC_END => {
-                true
-            }
+            DRAM_BASE..DRAM_END => true,
+            UART_BASE..UART_END => true,
+            RTC_BASE..RTC_END => true,
 
-            _ => false
+            _ => false,
         }
     }
 
@@ -216,7 +214,12 @@ impl Bus {
         self.reserved_addresses[hart_id] = None
     }
 
-    pub fn is_address_reserved(&self, hart_id: usize, address_start: usize, address_end: usize) -> bool {
+    pub fn is_address_reserved(
+        &self,
+        hart_id: usize,
+        address_start: usize,
+        address_end: usize,
+    ) -> bool {
         assert!(hart_id < NUM_HARTS);
 
         if let Some((start, end)) = self.reserved_addresses[hart_id] {

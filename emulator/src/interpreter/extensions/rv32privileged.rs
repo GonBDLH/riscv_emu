@@ -1,7 +1,11 @@
 use crate::interpreter::{
     bus::Bus,
     csr::ControlAndStatus,
-    riscv_core::{Exception, ExceptionType, IInstruction, PrivilegeLevel, RVCore, WithErrVal},
+    riscv_core::{
+        Exception, ExceptionType, IInstruction,
+        PrivilegeLevel::{self, Machine},
+        RVCore, WithErrVal,
+    },
 };
 
 pub fn ecall(_: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
@@ -15,16 +19,14 @@ pub fn ecall(_: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exc
 }
 
 pub fn ebreak(_: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
-    Err(Exception::new(ExceptionType::Breakpoint, core.pc))
+    Err(Exception::new(ExceptionType::Breakpoint, core.get_pc()))
 }
 
 pub fn mret(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
-    core.set_pc(
-        core.control_and_status
-            .read_csr(bus, ControlAndStatus::MEPC, core.privilege_level)
-            .with_err_val(instr.data)?,
-    );
-
+    let mepc = core
+        .control_and_status
+        .read_csr(bus, ControlAndStatus::MEPC, core.privilege_level)
+        .with_err_val(instr.data)?;
     let mut mstatus = core
         .control_and_status
         .read_mstatus(bus, core.privilege_level)
@@ -33,6 +35,16 @@ pub fn mret(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<()
     let mpp = mstatus.get_mpp();
     let mpie = mstatus.get_mpie();
     let mpp_y = PrivilegeLevel::new(mpp);
+
+    if mepc == 0x90809000 || mepc == 0x7fc0296c {
+        println!(
+            "MRET: mepc={:#010x} mpp={} new_priv={:?} mstatus={:#010x}",
+            mepc,
+            mstatus.get_mpp(),
+            mpp_y,
+            mstatus.0
+        );
+    }
 
     mstatus.set_mie(mpie);
     mstatus.set_mpie(true);
@@ -46,22 +58,12 @@ pub fn mret(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<()
         .with_err_val(instr.data)?;
 
     core.privilege_level = mpp_y;
+    core.set_pc(mepc);
 
     Ok(())
 }
 
-// TODO SRET
 pub fn sret(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
-    core.set_pc(
-        core.control_and_status
-            .read_csr(bus, ControlAndStatus::SEPC, core.privilege_level)
-            .with_err_val(instr.data)?,
-    );
-
-    let mut sstatus = core
-        .control_and_status
-        .read_sstatus(bus, core.privilege_level)
-        .with_err_val(instr.data)?;
     let mut mstatus = core.control_and_status.read_mstatus_unchecked();
 
     if mstatus.get_tsr() && core.privilege_level == PrivilegeLevel::Supervisor {
@@ -71,31 +73,33 @@ pub fn sret(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<()
         ));
     }
 
-    let spp = sstatus.get_spp();
-    let spie = sstatus.get_spie();
-    // TODO
+    let sepc = core
+        .control_and_status
+        .read_csr(bus, ControlAndStatus::SEPC, core.privilege_level)
+        .with_err_val(instr.data)?;
+
+    let spp = mstatus.get_spp();
+    let spie = mstatus.get_spie();
+
     let spp_y = PrivilegeLevel::new(spp as u32);
 
-    sstatus.set_sie(spie);
-    sstatus.set_spie(true);
-    sstatus.set_spp(false);
+    mstatus.set_sie(spie);
+    mstatus.set_spie(true);
+    mstatus.set_spp(false);
 
     if spp_y != PrivilegeLevel::Machine {
         mstatus.set_mprv(false);
     }
-    core.control_and_status
-        .write_csr(ControlAndStatus::SSTATUS, core.privilege_level, sstatus.0)
-        .with_err_val(core.pc)?;
-    // Puede que un poco hacky
     core.control_and_status
         .write_csr(
             ControlAndStatus::MSTATUS,
             PrivilegeLevel::Machine,
             mstatus.0,
         )
-        .unwrap();
+        .with_err_val(core.get_pc())?;
 
     core.privilege_level = spp_y;
+    core.set_pc(sepc);
 
     Ok(())
 }

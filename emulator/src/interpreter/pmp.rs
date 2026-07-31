@@ -1,11 +1,10 @@
 use bitfield::bitfield;
 
 use crate::interpreter::{
-    riscv_core::PrivilegeLevel,
-    virtual_memory::sv32::{AccessType, PhysicalAddress},
+    riscv_core::PrivilegeLevel, virtual_memory::sv32::{AccessType, PhysicalAddress},
 };
 
-const PMPCFG_MASK: u32 = 0x9F9F9F9F;
+const PMPCFG_MASK: u32 = 0x9F;
 
 pub struct PmpCsrs {
     pmp_cfg: [u32; 16],
@@ -34,12 +33,34 @@ impl PmpCsrs {
 
     pub fn set_pmp_cfg(&mut self, pmp_csr: usize, val: u32) {
         assert!(pmp_csr < 16);
-        self.pmp_cfg[pmp_csr] = val & PMPCFG_MASK;
+        let mut new_val = 0;
+
+        for i in 0..4 {
+            let val_sub = (val >> (i * 8)) & 0xFF;
+            let pmpcfg_entry = self.get_pmp_cfg_entry(4 * pmp_csr + i);
+            if pmpcfg_entry.get_l() {
+                // lock bit set
+                new_val |= (pmpcfg_entry.0 as u32) << (i * 8);
+            } else {
+                new_val |= (val_sub & PMPCFG_MASK) << (i * 8); 
+            }
+        }
+        self.pmp_cfg[pmp_csr] = new_val;
     }
 
     pub fn set_pmp_addr(&mut self, pmp_csr: usize, val: u32) {
         assert!(pmp_csr < 64);
-        self.pmp_addr[pmp_csr] = val;
+        let pmpcfg = self.get_pmp_cfg_entry(pmp_csr);
+
+        let mut can_write = !pmpcfg.get_l();
+        if pmp_csr < 63 {
+            let next_pmp = self.get_pmp_cfg_entry(pmp_csr + 1);
+            can_write |= !next_pmp.get_l() && (next_pmp.get_a() != 0x01); 
+        }
+
+        if can_write {
+            self.pmp_addr[pmp_csr] = val;
+        }
     }
 
     fn get_pmp_cfg_entry(&self, pmp_idx: usize) -> PmpCfgEntry {
@@ -125,6 +146,14 @@ impl PmpCfgEntry {
         match priv_level {
             PrivilegeLevel::Machine if !l => true,
             _ => perm_bit,
+            // PrivilegeLevel::Machine => {
+            //     if !l {
+            //         true
+            //     } else {
+            //         perm_bit
+            //     }
+            // }
+            // _ => perm_bit
         }
     }
 

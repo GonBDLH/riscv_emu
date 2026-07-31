@@ -348,7 +348,7 @@ pub fn beq(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let rs2_val = core.read_reg(instr.rs2);
     if rs1_val == rs2_val {
-        let new_pc = core.pc.wrapping_add(instr.imm);
+        let new_pc = core.get_pc().wrapping_add(instr.imm);
 
         if !core.get_c_ext_active() && new_pc % 4 != 0 {
             return Err(Exception::new(
@@ -369,7 +369,7 @@ pub fn bne(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let rs2_val = core.read_reg(instr.rs2);
     if rs1_val != rs2_val {
-        let new_pc = core.pc.wrapping_add(instr.imm);
+        let new_pc = core.get_pc().wrapping_add(instr.imm);
 
         if !core.get_c_ext_active() && new_pc % 4 != 0 {
             return Err(Exception::new(
@@ -390,7 +390,7 @@ pub fn blt(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let rs2_val = core.read_reg(instr.rs2);
     if (rs1_val as i32) < (rs2_val as i32) {
-        let new_pc = core.pc.wrapping_add(instr.imm);
+        let new_pc = core.get_pc().wrapping_add(instr.imm);
 
         if !core.get_c_ext_active() && new_pc % 4 != 0 {
             return Err(Exception::new(
@@ -411,7 +411,7 @@ pub fn bge(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let rs2_val = core.read_reg(instr.rs2);
     if (rs1_val as i32) >= (rs2_val as i32) {
-        let new_pc = core.pc.wrapping_add(instr.imm);
+        let new_pc = core.get_pc().wrapping_add(instr.imm);
 
         if !core.get_c_ext_active() && new_pc % 4 != 0 {
             return Err(Exception::new(
@@ -432,7 +432,7 @@ pub fn bltu(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let rs2_val = core.read_reg(instr.rs2);
     if rs1_val < rs2_val {
-        let new_pc = core.pc.wrapping_add(instr.imm);
+        let new_pc = core.get_pc().wrapping_add(instr.imm);
 
         if !core.get_c_ext_active() && new_pc % 4 != 0 {
             return Err(Exception::new(
@@ -453,7 +453,7 @@ pub fn bgeu(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
     let rs1_val = core.read_reg(instr.rs1);
     let rs2_val = core.read_reg(instr.rs2);
     if rs1_val >= rs2_val {
-        let new_pc = core.pc.wrapping_add(instr.imm);
+        let new_pc = core.get_pc().wrapping_add(instr.imm);
 
         if !core.get_c_ext_active() && new_pc % 4 != 0 {
             return Err(Exception::new(
@@ -471,7 +471,7 @@ pub fn bgeu(instr: &BInstruction, core: &mut RVCore) -> Result<(), Exception> {
 }
 
 pub fn jal(instr: &JInstruction, core: &mut RVCore) -> Result<(), Exception> {
-    let new_pc = core.pc.wrapping_add(instr.imm);
+    let new_pc = core.get_pc().wrapping_add(instr.imm);
     if !core.get_c_ext_active() && new_pc % 4 != 0 {
         return Err(Exception::new(
             ExceptionType::InstructionAddressMisaligned,
@@ -479,7 +479,7 @@ pub fn jal(instr: &JInstruction, core: &mut RVCore) -> Result<(), Exception> {
         ));
     }
 
-    core.write_reg(instr.rd, core.pc.wrapping_add(4));
+    core.write_reg(instr.rd, core.get_pc().wrapping_add(4));
     core.set_pc(new_pc);
 
     Ok(())
@@ -495,7 +495,7 @@ pub fn jalr(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), 
         ));
     }
 
-    core.write_reg(instr.rd, core.pc.wrapping_add(4));
+    core.write_reg(instr.rd, core.get_pc().wrapping_add(4));
     core.set_pc(new_pc);
 
     Ok(())
@@ -511,7 +511,7 @@ pub fn lui(instr: &UInstruction, core: &mut RVCore) -> Result<(), Exception> {
 }
 
 pub fn auipc(instr: &UInstruction, core: &mut RVCore) -> Result<(), Exception> {
-    let val = core.pc.wrapping_add(instr.imm);
+    let val = core.get_pc().wrapping_add(instr.imm);
     core.write_reg(instr.rd, val);
 
     core.inc_pc(4);

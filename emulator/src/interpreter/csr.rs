@@ -74,7 +74,7 @@ impl ControlAndStatus {
     const MSTATUS_MASK: u32 = 0x007E19AA;
     const MISA_MASK_WRITE: u32 = 0b00000000000101000001000100000001;
     const MIE_MASK: u32 = 0x00002AAA;
-    const MSTATUSH_MASK: u32 = 0x6F0;
+    const MSTATUSH_MASK: u32 = 0x0;
     const MIP_MASK: u32 = 0x00002AAA;
     const MENVCFG_MASK: u32 = 0x0001;
     const MENVCFGH_MASK: u32 = 0xA000;
@@ -229,7 +229,7 @@ impl ControlAndStatus {
             Self::HPMCOUNTER3H..=Self::HPMCOUNTER31H => self.csrs[csr],
 
             _ => {
-                println!("READ {:03X}", csr);
+                // println!("READ {:03X}", csr);
                 return Err(ExceptionType::IllegalInstruction);
             }
         };
@@ -404,7 +404,7 @@ impl ControlAndStatus {
             }
 
             _ => {
-                println!("WRITE {:03X}", csr);
+                // println!("WRITE {:03X}", csr);
                 return Err(ExceptionType::IllegalInstruction);
             }
         }
@@ -430,7 +430,7 @@ impl ControlAndStatus {
         phys_address: PhysicalAddress,
         priv_level: PrivilegeLevel,
         access_type: AccessType,
-        access_length: u64,
+        access_length: u64
     ) -> Result<PhysicalAddress, ExceptionType> {
         if self
             .pmp
