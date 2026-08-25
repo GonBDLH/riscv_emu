@@ -95,7 +95,7 @@ impl PmpCsrs {
                     let addr_end = (*addr_entry as u64) << 2;
                     let access_end = address.0.wrapping_add(access_length).wrapping_sub(1);
 
-                    if address.0 >= addr_start && access_end < addr_end {
+                    if address.0 >= addr_start && access_end <= addr_end {
                         return pmp_cfg_entry.check_access(priv_level, access_type);
                     }
                 }
@@ -105,7 +105,7 @@ impl PmpCsrs {
                     let addr_end = addr_start.wrapping_add(4);
                     let access_end = address.0.wrapping_add(access_length).wrapping_sub(1);
 
-                    if address.0 >= addr_start && access_end < addr_end {
+                    if address.0 >= addr_start && access_end <= addr_end {
                         return pmp_cfg_entry.check_access(priv_level, access_type);
                     }
                 }
@@ -116,7 +116,7 @@ impl PmpCsrs {
                     let addr_end = addr_start.wrapping_add(addr_range);
                     let access_end = address.0.wrapping_add(access_length).wrapping_sub(1);
 
-                    if address.0 >= addr_start && access_end < addr_end {
+                    if address.0 >= addr_start && access_end <= addr_end {
                         return pmp_cfg_entry.check_access(priv_level, access_type);
                     }
                 }

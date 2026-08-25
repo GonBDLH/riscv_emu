@@ -3,7 +3,7 @@ use crate::interpreter::{
     csr::ControlAndStatus,
     riscv_core::{
         Exception, ExceptionType, IInstruction,
-        PrivilegeLevel::{self, Machine},
+        PrivilegeLevel,
         RVCore, WithErrVal,
     },
 };
@@ -35,16 +35,6 @@ pub fn mret(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<()
     let mpp = mstatus.get_mpp();
     let mpie = mstatus.get_mpie();
     let mpp_y = PrivilegeLevel::new(mpp);
-
-    if mepc == 0x90809000 || mepc == 0x7fc0296c {
-        println!(
-            "MRET: mepc={:#010x} mpp={} new_priv={:?} mstatus={:#010x}",
-            mepc,
-            mstatus.get_mpp(),
-            mpp_y,
-            mstatus.0
-        );
-    }
 
     mstatus.set_mie(mpie);
     mstatus.set_mpie(true);
@@ -107,7 +97,7 @@ pub fn sret(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<()
 pub fn sfence_vma(instr: &IInstruction, _: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let mstatus = core.control_and_status.read_mstatus_unchecked();
 
-    if mstatus.get_tvm() {
+    if mstatus.get_tvm() && core.privilege_level == PrivilegeLevel::Supervisor {
         return Err(Exception::new(
             ExceptionType::IllegalInstruction,
             instr.data,

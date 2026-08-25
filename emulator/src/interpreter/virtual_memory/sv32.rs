@@ -96,8 +96,15 @@ fn check_access(
         PrivilegeLevel::Supervisor => {
             let sstatus = core.control_and_status.read_sstatus_unchecked();
 
-            if pte.get_u() && !sstatus.get_sum() && *access_type != AccessType::Execute {
-                return false;
+            if pte.get_u() {
+                match access_type {
+                    AccessType::Execute => return false,
+                    _ => {
+                        if !sstatus.get_sum() {
+                            return false;
+                        }
+                    }
+                }
             }
         }
         _ => {}

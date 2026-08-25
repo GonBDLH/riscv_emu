@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crate::interpreter::bus::Bus;
 use crate::interpreter::csr::*;
 use crate::interpreter::extensions::rv32a::*;
@@ -9,6 +11,7 @@ use crate::interpreter::extensions::rv32zicrs::*;
 use crate::interpreter::extensions::rv32zifencei::fence_i;
 use crate::interpreter::virtual_memory::sv32::AccessType;
 use crate::interpreter::virtual_memory::sv32::PhysicalAddress;
+use crate::interpreter::virtual_memory::sv32::translate_address;
 
 pub struct RVCore {
     // x0/zero -> Siempre 0
@@ -416,7 +419,8 @@ impl RVCore {
                     None
                 }
             }
-            0b001 => todo!("C.FLD"),
+            // todo!("C.FLD"),
+            0b001 => None,
             0b010 => {
                 let imm12_10 = (instr >> 10) & 0b111;
                 let rs1 = (instr >> 7) & 0b111;
@@ -428,9 +432,11 @@ impl RVCore {
                     funct3, imm12_10, rs1, imm6_5, rd, op, c_lw,
                 )))
             }
-            0b011 => todo!("C.FLW C.LD (RV32 RV64)"),
+            // 0b011 => todo!("C.FLW C.LD (RV32 RV64)"),
+            0b011 => None,
             0b100 => None,
-            0b101 => todo!("C.FSD"),
+            // 0b101 => todo!("C.FSD"),
+            0b101 => None,
             0b110 => {
                 let imm12_10 = (instr >> 10) & 0b111;
                 let rs1 = (instr >> 7) & 0b111;
@@ -442,7 +448,8 @@ impl RVCore {
                     funct3, imm12_10, rs1, imm6_5, rs2, op, c_sw,
                 )))
             }
-            0b111 => todo!("C.FSW C.SD (RV32 RV64)"),
+            // 0b111 => todo!("C.FSW C.SD (RV32 RV64)"),
+            0b111 => None,
             _ => unreachable!(),
         }
     }
@@ -576,7 +583,8 @@ impl RVCore {
                                 _ => unreachable!(),
                             }
                         } else {
-                            todo!("C.SUBW C.ADDW")
+                            // todo!("C.SUBW C.ADDW")
+                            None
                         }
                     }
                     _ => unreachable!(),
@@ -646,7 +654,8 @@ impl RVCore {
                     None
                 }
             }
-            0b001 => todo!("C.FLDSP"),
+            // 0b001 => todo!("C.FLDSP"),
+            0b001 => None,
             0b010 => {
                 let rd = (instr >> 7) & 0b11111;
                 let imm12 = (instr >> 12) & 0b1;
@@ -661,8 +670,8 @@ impl RVCore {
                     )))
                 }
             }
-            0b011 => todo!("C.FLWSP C.LDSP (F RV64)"),
-            // 0b100 => todo!("C.JR C.MV C.EBREAK C.JALR C.ADD"),
+            // 0b011 => todo!("C.FLWSP C.LDSP (F RV64)"),
+            0b011 => None,
             0b100 => {
                 let funct4 = (instr >> 12) & 0b1111;
                 let rd_rs1 = (instr >> 7) & 0b11111;
@@ -699,7 +708,8 @@ impl RVCore {
                     }
                 }
             }
-            0b101 => todo!("C.FSDSP"),
+            // 0b101 => todo!("C.FSDSP"),
+            0b101 => None,
             0b110 => {
                 let imm = (instr >> 7) & 0b111111;
                 let rs2 = (instr >> 2) & 0b11111;
@@ -709,7 +719,8 @@ impl RVCore {
                     funct3, imm, rs2, op, c_swsp,
                 )))
             }
-            0b111 => todo!("C.FSWSP C.SDSP (F RV64)"),
+            // 0b111 => todo!("C.FSWSP C.SDSP (F RV64)"),
+            0b111 => None,
             _ => unreachable!(),
         }
     }
@@ -1423,6 +1434,12 @@ pub struct Exception {
     pub exc_type: ExceptionType,
     pub val: u32,
 }
+
+// impl Debug for Exception {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(f, "Exception {{ exc_type: {:?}, val: {:08X} }}", self.exc_type, self.val)
+//     }
+// }
 
 impl Trap for Exception {
     fn get_cause(&self) -> u32 {

@@ -16,8 +16,7 @@ use crate::interpreter::{
     bus::Bus,
     csr::ControlAndStatus,
     riscv_core::{
-        Exception, ExceptionType, InstructionType, Interrupt, InterruptType,
-        PrivilegeLevel::{self, Machine},
+        Exception, ExceptionType, InstructionType, Interrupt, InterruptType, PrivilegeLevel,
         RVCore, Trap, WithErrVal,
     },
     virtual_memory::sv32::{AccessType, PhysicalAddress, translate_address},
@@ -166,6 +165,10 @@ impl Interpreter {
 
         // TODO Hay que cambiar esto para cuando se haga un fecth de 16 bits (C instr)
         let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute, 4)?;
+
+        if phys_pc.0 == 0x800002a8 {
+            println!("!");
+        }
 
         if !self.bus.check_pma(&phys_pc, AccessType::Execute) {
             return Err(Exception::new(

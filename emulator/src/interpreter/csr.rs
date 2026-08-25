@@ -87,7 +87,7 @@ impl ControlAndStatus {
     pub const STVEC: usize = 0x105;
     const SCOUNTEREN: usize = 0x106;
     const SENVCFG: usize = 0x10A;
-    const SSCRATCH: usize = 0x140;
+    pub const SSCRATCH: usize = 0x140;
     pub const SEPC: usize = 0x141;
     pub const SCAUSE: usize = 0x142;
     pub const STVAL: usize = 0x143;
@@ -97,9 +97,11 @@ impl ControlAndStatus {
 
     // SUPERVISOR MASKS
     const SSTATUS_MASK: u32 = 0x000C0122;
-    const SIE_MASK: u32 = 0xFFFF2222;
-    const SIP_MASK: u32 = 0xFFFF2222;
+    const SIE_MASK: u32 = 0x00000222;
+    const SIP_MASK_WRITE: u32 = 0x00000002;
+    const SIP_MASK_READ: u32 = 0x00000222;
     const SENVCFG_MASK: u32 = 0x0001;
+    const SEPC_MASK: u32 = 0xFFFFFFFE;
 
     // UNPRIVILEGED
     const CYCLE: usize = 0xC00;
@@ -184,10 +186,10 @@ impl ControlAndStatus {
 
             Self::MCYCLE => self.csrs[csr],
             Self::MINSTRET => self.minstret as u32,
-            Self::MHPMCOUNTER3..Self::MHPMCOUNTER31 => self.csrs[csr],
+            Self::MHPMCOUNTER3..=Self::MHPMCOUNTER31 => self.csrs[csr],
             Self::MCYCLEH => self.csrs[csr],
             Self::MINSTRETH => (self.minstret >> 32) as u32,
-            Self::MHPMCOUNTER3H..Self::MHPMCOUNTER31H => self.csrs[csr],
+            Self::MHPMCOUNTER3H..=Self::MHPMCOUNTER31H => self.csrs[csr],
 
             Self::PMPCFG0..=Self::PMPCFG15 => self.pmp.get_pmp_cfg(csr - Self::PMPCFG0),
             Self::PMPADDR0..=Self::PMPADDR63 => self.pmp.get_pmp_addr(csr - Self::PMPADDR0),
@@ -204,12 +206,12 @@ impl ControlAndStatus {
             Self::SEPC => self.csrs[Self::SEPC],
             Self::SCAUSE => self.csrs[Self::SCAUSE],
             Self::STVAL => self.csrs[Self::STVAL],
-            Self::SIP => self.csrs[Self::MIP] & Self::SIP_MASK,
+            Self::SIP => self.csrs[Self::MIP] & Self::SIP_MASK_READ,
 
             Self::SATP => {
                 let mstatus = self.read_mstatus_unchecked();
 
-                if mstatus.get_tvm() {
+                if mstatus.get_tvm() && priv_level == PrivilegeLevel::Supervisor {
                     return Err(ExceptionType::IllegalInstruction);
                 }
 
@@ -248,7 +250,7 @@ impl ControlAndStatus {
 
     // ATENCION SOLO USAR EN TRAPS
     pub fn read_sstatus_unchecked(&self) -> SStatus {
-        SStatus(self.csrs[Self::MSTATUS] & Self::SSTATUS_MASK)
+        SStatus(self.csrs[Self::MSTATUS] & Self::MSTATUS_MASK & Self::SSTATUS_MASK)
     }
 
     // ATENCION SOLO USAR EN TRAPS
@@ -264,17 +266,6 @@ impl ControlAndStatus {
         let csr = self.read_csr(bus, Self::MSTATUS, priv_level)?;
 
         Ok(MStatus(csr))
-    }
-
-    // ATENCION SOLO USAR EN TRAPS
-    pub fn read_sstatus(
-        &self,
-        bus: &Bus,
-        priv_level: PrivilegeLevel,
-    ) -> Result<SStatus, ExceptionType> {
-        let csr = self.read_csr(bus, Self::SSTATUS, priv_level)?;
-
-        Ok(SStatus(csr))
     }
 
     pub fn read_mip_unchecked(&self) -> u32 {
@@ -337,7 +328,14 @@ impl ControlAndStatus {
                 self.csrs[Self::MSTATUS] =
                     (self.csrs[Self::MSTATUS] & !Self::SSTATUS_MASK) | (val & Self::SSTATUS_MASK)
             }
-            Self::STVEC => self.csrs[Self::STVEC] = val,
+            Self::STVEC => {
+                let legal_val = if val & 0b11 >= 2 {
+                    val & 0xFFFFFFFC
+                } else {
+                    val
+                };
+                self.csrs[Self::STVEC] = legal_val
+            },
             Self::SCOUNTEREN => self.csrs[Self::SCOUNTEREN] = val,
             Self::SENVCFG => self.csrs[Self::SENVCFG] = val & Self::SENVCFG_MASK,
 
@@ -364,7 +362,7 @@ impl ControlAndStatus {
             }
             Self::MINSTRETH => {
                 self.minstret_loaded = true;
-                self.minstret &= 0xFFFFFFFF00000000;
+                self.minstret &= 0x00000000FFFFFFFF;
                 self.minstret |= (val as u64) << 32;
             }
             Self::MEPC => self.csrs[Self::MEPC] = val & 0xFFFFFFFE,
@@ -387,16 +385,16 @@ impl ControlAndStatus {
             Self::PMPCFG0..=Self::PMPCFG15 => self.pmp.set_pmp_cfg(csr - Self::PMPCFG0, val),
             Self::PMPADDR0..=Self::PMPADDR63 => self.pmp.set_pmp_addr(csr - Self::PMPADDR0, val),
 
-            Self::SEPC => self.csrs[csr] = val,
+            Self::SEPC => self.csrs[csr] = val & Self::SEPC_MASK,
             Self::SCAUSE => self.csrs[csr] = val,
             Self::STVAL => self.csrs[csr] = val,
-            Self::SIP => self.csrs[csr] = val & Self::SIP_MASK,
-            Self::SIE => self.csrs[csr] = val & Self::SIE_MASK,
+            Self::SIP => self.csrs[Self::MIP] = (self.csrs[Self::MIP] & !Self::SIP_MASK_WRITE) | (val & Self::SIP_MASK_WRITE),
+            Self::SIE => self.csrs[Self::MIE] = (self.csrs[Self::MIE] & !Self::SIE_MASK) | (val & Self::SIE_MASK),
 
             Self::SATP => {
                 let mstatus = self.read_mstatus_unchecked();
 
-                if mstatus.get_tvm() {
+                if mstatus.get_tvm() && priv_level == PrivilegeLevel::Supervisor {
                     return Err(ExceptionType::IllegalInstruction);
                 }
 
