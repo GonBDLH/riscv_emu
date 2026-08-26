@@ -81,48 +81,58 @@ bitfield! {
     pub get_v, set_v: 0;
 }
 
-fn check_access(
-    core: &mut RVCore,
-    pte: &PageTableEntry,
-    access_type: &AccessType,
-    effective_priv: PrivilegeLevel,
-) -> bool {
-    match effective_priv {
-        PrivilegeLevel::User => {
-            if !pte.get_u() {
-                return false;
-            }
-        }
-        PrivilegeLevel::Supervisor => {
-            let sstatus = core.control_and_status.read_sstatus_unchecked();
+impl PageTableEntry {
+    fn invalid(&self) -> bool {
+        !self.get_v() || (!self.get_r() && self.get_w())
+    }
 
-            if pte.get_u() {
-                match access_type {
-                    AccessType::Execute => return false,
-                    _ => {
-                        if !sstatus.get_sum() {
-                            return false;
+    fn invalid_non_leaf(&self) -> bool {
+        self.get_d() || self.get_a() || self.get_u()
+    }
+
+    fn check_access(
+        &self,
+        core: &mut RVCore,
+        access_type: &AccessType,
+        effective_priv: PrivilegeLevel,
+    ) -> bool {
+        match effective_priv {
+            PrivilegeLevel::User => {
+                if !self.get_u() {
+                    return false;
+                }
+            }
+            PrivilegeLevel::Supervisor => {
+                let sstatus = core.control_and_status.read_sstatus_unchecked();
+
+                if self.get_u() {
+                    match access_type {
+                        AccessType::Execute => return false,
+                        _ => {
+                            if !sstatus.get_sum() {
+                                return false;
+                            }
                         }
                     }
                 }
             }
+            _ => {}
         }
-        _ => {}
-    }
 
-    match access_type {
-        AccessType::Execute => pte.get_x(),
-        AccessType::Load => {
-            let mstatus = core.control_and_status.read_mstatus_unchecked();
-            let mxr = mstatus.get_mxr();
+        match access_type {
+            AccessType::Execute => self.get_x(),
+            AccessType::Load => {
+                let mstatus = core.control_and_status.read_mstatus_unchecked();
+                let mxr = mstatus.get_mxr();
 
-            if mxr {
-                pte.get_r() || pte.get_x()
-            } else {
-                pte.get_r()
+                if mxr {
+                    self.get_r() || self.get_x()
+                } else {
+                    self.get_r()
+                }
             }
+            AccessType::StoreAmo => self.get_w(),
         }
-        AccessType::StoreAmo => pte.get_w(),
     }
 }
 
@@ -234,7 +244,7 @@ fn translate(
                 .with_err_val(virt_address)?,
         );
 
-        if !pte.get_v() || (!pte.get_r() && pte.get_w()) {
+        if pte.invalid() {
             return Err(Exception::new(
                 access_type.get_page_fault_exception(),
                 virt_address,
@@ -242,6 +252,8 @@ fn translate(
         }
 
         if pte.get_r() || pte.get_x() {
+            // LEAF PTE
+
             if i > 0 && (pte.get_ppn0() != 0) {
                 return Err(Exception::new(
                     access_type.get_page_fault_exception(),
@@ -253,7 +265,7 @@ fn translate(
             // Determine if the requested memory access is allowed by the pte.r, pte.w, and pte.x bits, given the
             // Shadow Stack Memory Protection rules. If not, stop and raise an access-fault exception
 
-            if !check_access(core, &pte, &access_type, effective_priv) {
+            if !pte.check_access(core, &access_type, effective_priv) {
                 return Err(Exception::new(
                     access_type.get_page_fault_exception(),
                     virt_address,
@@ -265,11 +277,11 @@ fn translate(
                     .check_pmp(
                         PhysicalAddress(pte_addr as u64),
                         PrivilegeLevel::Supervisor,
-                        access_type,
+                        AccessType::StoreAmo,
                         4,
                     )
                     .with_err_val(virt_address)?;
-                if !bus.check_pma(&new_pte_phys_address, access_type) {
+                if !bus.check_pma(&new_pte_phys_address, AccessType::StoreAmo) {
                     return Err(Exception::new(
                         access_type.get_access_fault_exception(),
                         virt_address,
@@ -294,6 +306,8 @@ fn translate(
                 }
             }
 
+            // NON-LEAF PTE
+
             let mut phys_address = PhysicalAddress(0);
             phys_address.set_page_offset(va.get_page_offset() as u64);
             if i > 0 {
@@ -306,6 +320,13 @@ fn translate(
             return core
                 .check_pmp(phys_address, effective_priv, access_type, access_length)
                 .with_err_val(virt_address);
+        }
+
+        if pte.invalid_non_leaf() {
+            return Err(Exception::new(
+                access_type.get_page_fault_exception(),
+                virt_address,
+            ));
         }
 
         i -= 1;

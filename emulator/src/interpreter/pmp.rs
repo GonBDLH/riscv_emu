@@ -146,14 +146,6 @@ impl PmpCfgEntry {
         match priv_level {
             PrivilegeLevel::Machine if !l => true,
             _ => perm_bit,
-            // PrivilegeLevel::Machine => {
-            //     if !l {
-            //         true
-            //     } else {
-            //         perm_bit
-            //     }
-            // }
-            // _ => perm_bit
         }
     }
 

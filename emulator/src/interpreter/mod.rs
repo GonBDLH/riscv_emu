@@ -166,7 +166,7 @@ impl Interpreter {
         // TODO Hay que cambiar esto para cuando se haga un fecth de 16 bits (C instr)
         let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute, 4)?;
 
-        if phys_pc.0 == 0x800002a8 {
+        if phys_pc.0 == 0x80000328 {
             println!("!");
         }
 
@@ -269,6 +269,8 @@ impl Interpreter {
         }
 
         if let Err(exception) = self.core_step() {
+            println!("{:?}", exception);
+
             match exception.exc_type {
                 #[cfg(feature = "hitf")]
                 ExceptionType::ExitException => {
