@@ -53,6 +53,33 @@
         "base_alignment": 2
       }
     },
+    "medeleg": {
+      // A bit set to 1 in this value specifies that the corresponding
+      // bit of `medeleg` can be set to 1. It represents the subset of
+      // delegatable traps of the implementation. Bits should not be
+      // set for traps that cannot be delegated as per the
+      // specification, and delegation of reserved traps is not
+      // supported.  This value is ignored when the `medeleg` CSR does
+      // not exist.
+      "delegatable_bits": {
+        "len": 64,
+        "value": "0x0000_0000_0004_b3FF"
+      }
+    },
+    "mideleg": {
+      // A bit set to 1 in this value specifies that the corresponding
+      // bit of `mideleg` can be set to 1. It represents the subset of
+      // delegatable interrupts of the implementation. Bits should not
+      // be set for interrupts that cannot be delegated as per the
+      // specification, and delegation of reserved interrupts is not
+      // supported. Bits set for interrupts designated for platform
+      // use are ignored. This value is ignored when the `mideleg` CSR
+      // does not exist.
+      "delegatable_bits": {
+        "len": "xlen",
+        "value": "0x0000_0000_0000_2222"
+      }
+    },
     // These settings control whether the specified exceptions
     // cause information to be written into the appropriate
     // `xtval` registers.
@@ -111,9 +138,18 @@
       // - "ExtContext_Off" allows only {Off}.  This makes the field read-only zero.
       "fs_legal_states": "ExtContext_Off",
       "vs_legal_states": "ExtContext_Off"
-    }
+    },
+    "privileged_isa_version": "Privileged_ISA_1_13"
   },
   "memory": {
+    // This specifies the number of implemented physical address bits.
+    // This is less than or equal to: 32 for RV32 without Sv32, 34 for
+    // RV32 with Sv32, and 64 for RV64. Architectural bits higher than
+    // `physaddr_bits` in physical addresses are effectively read-only zero.
+    // This is required to be 13 or higher to avoid representing empty
+    // bitvectors in the model and since it is unlikely real implementations
+    // will have lower values.
+    "physaddr_bits": 34,
     "pmp": {
       "grain": 0,
       // This specifies the number of PMP entries present.
@@ -148,15 +184,17 @@
         // independently of the scalar case above, but uses the same
         // option values.
         "vector": {
-          "Some": "AlignmentException"
+          "None": null
+        },
+        // Similarly, a misaligned AMO currently always faults, and this field
+        // can specify either `"AccessFault"` or `"AlignmentException"`.
+        "amo": {
+          "Some": "AccessFault"
         },
         // A misaligned LR/SC currently always faults, and this field can specify
         // whether it generates an access fault (use `"AccessFault"`)
         // or a misaligned exception (use `"AlignmentException"`).
-        "lrsc": "AccessFault",
-        // Similarly, a misaligned AMO currently always faults, and this field
-        // can specify either `"AccessFault"` or `"AlignmentException"`.
-        "amo": "AccessFault"
+        "lrsc": "AccessFault"
       },
       // If a misaligned access was specified to have no fault in `exceptions` above, the
       // fields below specify how it is handled.
@@ -175,7 +213,19 @@
       // are done in increasing or decreasing address order. This is architecturally
       // observable because some store operations may succeed, and even for
       // loads the resulting `xtval` may depend on this setting.
-      "order_decreasing": false
+      "order_decreasing": false,
+      // If a misaligned access was specified to have no fault in
+      // `exceptions` above, the PMAs for the access, including the
+      // optional Misaligned Atomicity Granule (MAG) PMA, specify how
+      // it is handled.  If no MAG PMA is specified, or the MAG does
+      // not apply to the access, the `default_allowed_within_exp`
+      // value below specifies this handling.
+      //
+      // Memory accesses that span multiple naturally aligned
+      // 2^default_allowed_within_exp sized regions will be split into
+      // multiple memory operations. 0 means all misaligned accesses
+      // will be split.  The maximum value is 12 (one page).
+      "default_allowed_within_exp": 12
     },
     // Address to write DTB to (if provided). This must be in a suitable memory
     // region (see `memory.regions`).
@@ -217,6 +267,8 @@
             "amo": "AccessFault"
           },
           "atomic_support": "AMONone",
+          "misaligned_atomicity_granule_size_exp": 0,
+          "vector_misaligned_atomicity_granule_size_exp": 0,
           "reservability": "RsrvNone",
           "supports_cbo_zero": false,
           "supports_pte_read": false,
@@ -253,6 +305,8 @@
             "amo": "AccessFault"
           },
           "atomic_support": "AMONone",
+          "misaligned_atomicity_granule_size_exp": 0,
+          "vector_misaligned_atomicity_granule_size_exp": 0,
           "reservability": "RsrvNone",
           "supports_cbo_zero": false,
           "supports_pte_read": false,
@@ -289,6 +343,8 @@
             "amo": "AccessFault"
           },
           "atomic_support": "AMOArithmetic",
+          "misaligned_atomicity_granule_size_exp": 4,
+          "vector_misaligned_atomicity_granule_size_exp": 4,
           "reservability": "RsrvEventual",
           "supports_cbo_zero": true,
           "supports_pte_read": true,
@@ -323,7 +379,7 @@
     },
     "clint": {
       // This must be in a suitable IO memory region (see `memory.regions`). TODO
-      "supported": false,
+      "supported": true,
       "base": 33554432,
       "size": 786432
     },
@@ -365,7 +421,17 @@
       "supported": true
     },
     "F": {
-      "supported": false
+      "supported": false,
+      // When to set mstatus[FS] and mstatus[SD] to 1, as a result of fflags
+      // being set. There are three options:
+      //
+      // - Fflags_Dirty_Precise: Only set FS/SD when absolutely required, because
+      //                         fflags has actually changed value.
+      // - Fflags_Dirty_Flag: Set FS/SD when the instruction sets a flag, even
+      //                      if that flag is already set.
+      // - Fflags_Dirty_Instruction: Set FS/SD when we execute an instruction that
+      //                             might set a flag, even if it actually doesn't.
+      "fflags_dirty_policy": "Fflags_Dirty_Precise"
     },
     "D": {
       "supported": false
@@ -490,7 +556,7 @@
       "supported": false
     },
     "Zmmul": {
-      "supported": false
+      "supported": true
     },
     "Zaamo": {
       "supported": false
@@ -503,6 +569,9 @@
     },
     "Zalrsc": {
       "supported": true
+    },
+    "Zama16b": {
+      "supported": false
     },
     "Zawrs": {
       "supported": false,
