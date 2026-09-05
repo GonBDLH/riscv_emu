@@ -163,9 +163,9 @@
 
 ##### Machine Timer #####
 
-#define RVMODEL_MTIME_ADDRESS  0x03000000  /* Address of mtime CSR */
+#define RVMODEL_MTIME_ADDRESS  0x0200BFF8  /* Address of mtime CSR */
 
-#define RVMODEL_MTIMECMP_ADDRESS 0x03000004 /* Address of mtimecmp CSR */
+#define RVMODEL_MTIMECMP_ADDRESS 0x02004000 /* Address of mtimecmp CSR */
 
 ##### Machine Interrupts #####
 

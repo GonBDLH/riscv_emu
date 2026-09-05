@@ -1423,9 +1423,7 @@ pub enum ExceptionType {
     SoftwareCheck = 18,
     HardwareError = 19,
 
-    #[cfg(feature = "hitf")]
-    HitfSyscall = 24,
-    #[cfg(any(feature = "hitf", feature = "semihosting"))]
+    #[cfg(feature = "semihosting")]
     ExitException = 25,
 }
 

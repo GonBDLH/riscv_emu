@@ -2,9 +2,6 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
 
-
-#[cfg(feature = "hitf")]
-const DIR: &'static str = "../hitf_elf_tests";
 #[cfg(feature = "semihosting")]
 const DIR: &'static str = "../semihosting_elf_tests";
 
@@ -20,30 +17,6 @@ fn {test_name}() {{
     let ret = interpreter.run();
 
     assert_eq!(ret.unwrap(), 0x20026);
-}}
-"#
-    )
-    .unwrap();
-}
-
-#[cfg(feature = "hitf")]
-fn generate_tests(file: &mut File, test_name: &str, name: &str) {
-    writeln!(
-        file,
-        r#"
-#[test]
-#[timeout(5000)]
-fn {test_name}() {{
-    let hitf_size = if "{name}".contains("-v-") {{
-        8
-    }} else {{
-        4
-    }};
-
-    let mut interpreter = Interpreter::new_test_elf("{DIR}/{name}", hitf_size);
-    let ret = interpreter.run();
-
-    assert_eq!(ret.unwrap(), 0);
 }}
 "#
     )

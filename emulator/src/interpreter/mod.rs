@@ -7,8 +7,6 @@ use std::{
 use elf::{ElfBytes, endian::LittleEndian};
 use ihex::{Reader, Record};
 
-#[cfg(feature = "hitf")]
-use crate::interpreter::hitf::HitfState;
 #[cfg(feature = "semihosting")]
 use crate::interpreter::semihosting::semihosting;
 
@@ -32,38 +30,24 @@ mod virtual_memory;
 #[cfg(feature = "semihosting")]
 mod semihosting;
 
-#[cfg(feature = "hitf")]
-mod hitf;
-
 const NUM_HARTS: usize = 1;
 
 #[derive(Default)]
 pub struct Interpreter {
     pub bus: Bus,
     pub core: RVCore,
-
-    #[cfg(feature = "hitf")]
-    pub hitf: HitfState,
 }
 
 impl Interpreter {
     #[cfg(test)]
     #[allow(unused_variables)]
-    pub fn new_test_elf(path: &str, hitf_size: u8) -> Self {
+    pub fn new_test_elf(path: &str) -> Self {
         let mut interpreter = Self {
             bus: Bus::default(),
             core: RVCore::default(),
-
-            #[cfg(feature = "hitf")]
-            hitf: HitfState::default(),
         };
 
         interpreter.load_elf(path);
-
-        #[cfg(feature = "hitf")]
-        {
-            interpreter.bus.hitf.hitf_size = hitf_size;
-        }
 
         interpreter
     }
@@ -72,10 +56,7 @@ impl Interpreter {
     pub fn new() -> Self {
         Self {
             bus: Bus::default(),
-            core: RVCore::default(),
-
-            #[cfg(feature = "hitf")]
-            hitf: HitfState::default(),
+            core: RVCore::default()
         }
     }
 
@@ -120,23 +101,6 @@ impl Interpreter {
         let slice = file_data.as_slice();
         let file = ElfBytes::<LittleEndian>::minimal_parse(slice).expect("Bad format");
 
-        #[cfg(feature = "hitf")]
-        {
-            let tohost = file
-                .section_header_by_name(".tohost")
-                .expect("section table should be parseable")
-                .expect("file should have a .tohost section");
-
-            self.bus.hitf.tohost = tohost.sh_addr as usize;
-            self.bus.hitf.fromhost = tohost.sh_addr as usize + 0x40;
-
-            if path.contains("-v-") {
-                self.bus.hitf.hitf_size = 8;
-            } else {
-                self.bus.hitf.hitf_size = 4;
-            }
-        }
-
         for phdr in file.segments().unwrap() {
             if phdr.p_type == 1 {
                 // PT_LOAD
@@ -166,7 +130,7 @@ impl Interpreter {
         // TODO Hay que cambiar esto para cuando se haga un fecth de 16 bits (C instr)
         let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute, 4)?;
 
-        if phys_pc.0 == 0x80000328 {
+        if phys_pc.0 == 0x8000004c {
             println!("!");
         }
 
@@ -230,29 +194,6 @@ impl Interpreter {
 
         let instr = self.decode(fetched)?;
 
-        #[cfg(feature = "hitf")]
-        return {
-            let exc = instr.execute(&mut self.bus, &mut self.core);
-
-            if let Err(exc) = exc {
-                match exc.exc_type {
-                    ExceptionType::HitfSyscall => {
-                        self.core.control_and_status.increment_minstret();
-                        self.core.pc = self.core.pc.wrapping_add(instr.get_width());
-                    }
-
-                    _ => {}
-                }
-
-                Err(exc)
-            } else {
-                self.core.control_and_status.increment_minstret();
-                self.core.pc = self.core.pc.wrapping_add(instr.get_width());
-
-                Ok(())
-            }
-        };
-
         instr.execute(&mut self.bus, &mut self.core)?;
 
         self.core.control_and_status.increment_minstret();
@@ -269,17 +210,9 @@ impl Interpreter {
         }
 
         if let Err(exception) = self.core_step() {
-            println!("{:?}", exception);
-
             match exception.exc_type {
-                #[cfg(feature = "hitf")]
-                ExceptionType::ExitException => {
-                    return Some(exception.get_val() >> 1);
-                }
                 #[cfg(feature = "semihosting")]
                 ExceptionType::ExitException => return Some(exception.get_val()),
-                #[cfg(feature = "hitf")]
-                ExceptionType::HitfSyscall => HitfState::syscall(&exception, &self.core, &self.bus),
                 _ => exception.handle(&mut self.core),
             }
         };

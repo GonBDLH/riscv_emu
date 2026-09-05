@@ -10,5 +10,4 @@ ihex = "3.0.0"
 ntest = "0.9.3"
 
 [features]
-hitf = []
 semihosting = []

@@ -1,14 +1,12 @@
 #![allow(clippy::items_after_test_module)]
 
-#[cfg(feature = "hitf")]
-use crate::interpreter::hitf::HitfState;
 use crate::{
     interpreter::{
         NUM_HARTS,
         riscv_core::ExceptionType,
         virtual_memory::sv32::{AccessType, PhysicalAddress},
     },
-    peripherals::{Mmio, RTC_BASE, RTC_END, UART_BASE, UART_END},
+    peripherals::{Mmio, CLINT_BASE, CLINT_END, UART_BASE, UART_END},
 };
 
 pub const DRAM_BASE: usize = 0x80000000;
@@ -31,9 +29,6 @@ pub struct Bus {
     // pub timer: RealTimeCounter,
     pub mmio: Mmio,
 
-    #[cfg(feature = "hitf")]
-    pub hitf: HitfState,
-
     // PARA RV32A
     reserved_addresses: [Option<(usize, usize)>; NUM_HARTS],
 }
@@ -47,9 +42,6 @@ impl Default for Bus {
             // timer: RealTimeCounter::new(),
             mmio: Mmio::new(),
             reserved_addresses: [None],
-
-            #[cfg(feature = "hitf")]
-            hitf: HitfState::default(),
         }
     }
 }
@@ -59,18 +51,7 @@ impl Bus {
         let address = phys_address.0 as usize;
 
         match address {
-            DRAM_BASE..DRAM_END => {
-                #[cfg(feature = "hitf")]
-                if address >= self.hitf.tohost && address < (self.hitf.tohost + 8) {
-                    return Ok(self.hitf.read_tohost_byte(address));
-                }
-                #[cfg(feature = "hitf")]
-                if address >= self.hitf.fromhost && address < (self.hitf.fromhost + 8) {
-                    return Ok(self.hitf.read_fromhost_byte(address));
-                }
-
-                Ok(self.dram[address - DRAM_BASE])
-            }
+            DRAM_BASE..DRAM_END => Ok(self.dram[address - DRAM_BASE]),
             ROM_BASE..ROM_END => Ok(self.rom[address - ROM_BASE]),
             MMIO_BASE..MMIO_END => Ok(self.mmio.read_byte(address)),
             _ => Err(ExceptionType::LoadAccessFault),
@@ -86,19 +67,6 @@ impl Bus {
 
         match address {
             DRAM_BASE..DRAM_END => {
-                #[cfg(feature = "hitf")]
-                if address >= self.hitf.tohost && address < (self.hitf.tohost + 8) {
-                    let hitf = self.hitf.write_tohost_byte(address, val);
-                    if let Some(hitf) = hitf {
-                        return hitf.run();
-                    }
-                }
-                #[cfg(feature = "hitf")]
-                if address >= self.hitf.fromhost && address < (self.hitf.fromhost + 8) {
-                    self.hitf
-                        .write_fromhost_byte(address - self.hitf.fromhost, val);
-                }
-
                 self.dram[address - DRAM_BASE] = val;
 
                 // TODO Si en algun momento meto mas HARTS hay que hacer que se invaliden los de OTROS HARTS
@@ -196,7 +164,7 @@ impl Bus {
         match address {
             DRAM_BASE..DRAM_END => true,
             UART_BASE..UART_END => true,
-            RTC_BASE..RTC_END => true,
+            CLINT_BASE..CLINT_END => true,
 
             _ => false,
         }
