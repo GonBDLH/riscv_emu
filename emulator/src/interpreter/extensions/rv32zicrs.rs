@@ -6,18 +6,25 @@ use crate::interpreter::{
 pub fn csrrw(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let csr = instr.imm as usize;
     let rs1_val = core.read_reg(instr.rs1);
+    let mut update_rd = false;
 
-    if instr.rd != 0 {
-        let old_csr = core
+    let old_csr = if instr.rd != 0 {
+        update_rd = true;
+        core
             .control_and_status
             .read_csr(bus, csr, core.privilege_level)
-            .with_err_val(instr.data)?;
-        core.write_reg(instr.rd, old_csr);
-    }
+            .with_err_val(instr.data)?
+    } else {
+        0
+    };
 
     core.control_and_status
         .write_csr(csr, core.privilege_level, rs1_val)
         .with_err_val(instr.data)?;
+
+    if update_rd {
+        core.write_reg(instr.rd, old_csr);
+    }
 
     core.inc_pc(4);
 
@@ -70,18 +77,25 @@ pub fn csrrc(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(
 pub fn csrrwi(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let csr = instr.imm as usize;
     let imm_val = instr.rs1;
+    let mut update_rd = false;
 
-    if instr.rd != 0 {
-        let old_csr = core
+    let old_csr = if instr.rd != 0 {
+        update_rd = true;
+        core
             .control_and_status
             .read_csr(bus, csr, core.privilege_level)
-            .with_err_val(instr.data)?;
-        core.write_reg(instr.rd, old_csr);
-    }
+            .with_err_val(instr.data)?
+    } else {
+        0
+    };
 
     core.control_and_status
         .write_csr(csr, core.privilege_level, imm_val)
         .with_err_val(instr.data)?;
+
+    if update_rd {
+        core.write_reg(instr.rd, old_csr);
+    }
 
     core.inc_pc(4);
 

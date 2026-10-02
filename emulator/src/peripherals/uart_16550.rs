@@ -70,6 +70,7 @@ impl Peripheral for Uart16550 {
     fn read_byte(&self, address: usize) -> u8 {
         let (regs, cvar) = &*self.regs;
         let mut regs = regs.lock().expect("Mutex envenendado");
+
         match address {
             UART_RHR_THR => {
                 cvar.notify_one();
@@ -83,6 +84,7 @@ impl Peripheral for Uart16550 {
     fn write_byte(&mut self, address: usize, val: u8) {
         let (regs, _cvar) = &*self.regs;
         let mut regs = regs.lock().expect("Mutex envenendado");
+
         match address {
             UART_RHR_THR => {
                 print!("{}", val as char);

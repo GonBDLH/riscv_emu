@@ -13,7 +13,7 @@ fn generate_tests(file: &mut File, test_name: &str, name: &str) {
 #[test]
 #[timeout(5000)]
 fn {test_name}() {{
-    let mut interpreter = Interpreter::new_test_elf("{DIR}/{name}", 0);
+    let mut interpreter = Interpreter::new_test_elf("{DIR}/{name}");
     let ret = interpreter.run();
 
     assert_eq!(ret.unwrap(), 0x20026);
@@ -23,6 +23,7 @@ fn {test_name}() {{
     .unwrap();
 }
 
+#[cfg(feature = "semihosting")]
 fn main() {
     let out_path = Path::new("src/tests.rs");
 
@@ -54,3 +55,7 @@ use ntest::timeout;
     // // Cierre del módulo tests
     // writeln!(file, "}}").unwrap();
 }
+
+
+#[cfg(not(feature = "semihosting"))]
+fn main() {}

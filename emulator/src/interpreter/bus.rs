@@ -1,21 +1,22 @@
 #![allow(clippy::items_after_test_module)]
 
+use std::fs;
+
 use crate::{
     interpreter::{
-        NUM_HARTS,
-        riscv_core::ExceptionType,
-        virtual_memory::sv32::{AccessType, PhysicalAddress},
-    },
-    peripherals::{Mmio, CLINT_BASE, CLINT_END, UART_BASE, UART_END},
+        NUM_HARTS, riscv_core::ExceptionType, virtual_memory::sv32::{AccessType, PhysicalAddress},
+    }, peripherals::{CLINT_BASE, CLINT_END, Mmio, UART_BASE, UART_END},
 };
 
 pub const DRAM_BASE: usize = 0x80000000;
-pub const DRAM_SIZE: usize = 8 * 1024 * 1024;
+pub const DRAM_SIZE: usize = 16 * 1024 * 1024;
 pub const DRAM_END: usize = DRAM_BASE + DRAM_SIZE;
 
-pub const ROM_BASE: usize = 0x00001000;
-pub const ROM_SIZE: usize = 0x00001000;
+pub const ROM_BASE: usize = 0x00000000;
+pub const ROM_SIZE: usize = 0x00008000;
 pub const ROM_END: usize = ROM_BASE + ROM_SIZE;
+
+pub const DTB_OFFSET: usize = 0x100;
 
 pub const MMIO_BASE: usize = 0x02000000;
 pub const MMIO_SIZE: usize = 0x10000000;
@@ -25,8 +26,6 @@ pub struct Bus {
     pub dram: Vec<u8>,
 
     rom: Vec<u8>,
-    // pub uart: Uart16550,
-    // pub timer: RealTimeCounter,
     pub mmio: Mmio,
 
     // PARA RV32A
@@ -35,14 +34,19 @@ pub struct Bus {
 
 impl Default for Bus {
     fn default() -> Self {
-        Self {
+        let mut bus = Self {
             dram: vec![0x00; DRAM_SIZE],
             rom: vec![0x00; ROM_SIZE],
             // uart: Uart16550::new(),
             // timer: RealTimeCounter::new(),
             mmio: Mmio::new(),
             reserved_addresses: [None],
-        }
+        };
+
+        #[cfg(not(test))]
+        bus.load_dtb();
+
+        bus
     }
 }
 
@@ -214,6 +218,7 @@ impl Bus {
         assert!(start + data.len() <= DRAM_END, "Segment too big");
 
         let offset = start - DRAM_BASE;
+        // let offset = start;
         let end = offset + data.len();
 
         self.dram[offset..end].copy_from_slice(data);
@@ -224,8 +229,23 @@ impl Bus {
         assert!(end <= DRAM_END, "Segment too big");
 
         let offset_start = start - DRAM_BASE;
+        // let offset_start = start;
         let offset_end = end - DRAM_BASE;
 
         self.dram[offset_start..offset_end].fill(0);
+    }
+
+    pub fn load_dtb(&mut self) {
+        let dtb_contents = fs::read("out.dtb").unwrap();
+
+        let offset_start = DTB_OFFSET;
+        let offset_end = offset_start + dtb_contents.len();
+
+        for i in 0..16 {
+            print!("{:02X} ", dtb_contents[i])
+        }
+        println!();
+
+        self.rom[DTB_OFFSET..offset_end].copy_from_slice(&dtb_contents);
     }
 }

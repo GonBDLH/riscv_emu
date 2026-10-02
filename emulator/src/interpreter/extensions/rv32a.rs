@@ -6,17 +6,7 @@ use crate::interpreter::{
 
 pub fn lr_w(instr: &AtomicInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), Exception> {
     let address = core.read_reg(instr.rs1);
-    let phys_address = translate_address(core, bus, address, AccessType::Load, 4)
-        // TODO Cambiar cuando permita address missaligned (cambiarlo en los tests, me da pereza preparar el entorno en el portatil)
-        .map_err(|exc| {
-            let exc_type = if exc.exc_type == ExceptionType::LoadAddressMisaligned {
-                ExceptionType::LoadAccessFault
-            } else {
-                exc.exc_type
-            };
-
-            Exception::new(exc_type, exc.get_val())
-        })?;
+    let phys_address = translate_address(core, bus, address, AccessType::Load, 4)?;
 
     let val = bus
         .read_aligned_word(&phys_address)
@@ -40,17 +30,7 @@ fn sc_w_inner(
     core: &mut RVCore,
 ) -> Result<(), Exception> {
     let address = core.read_reg(instr.rs1);
-    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)
-        // TODO Cambiar cuando permita address missaligned (cambiarlo en los tests, me da pereza preparar el entorno en el portatil)
-        .map_err(|exc| {
-            let exc_type = if exc.exc_type == ExceptionType::StoreAmoAddressMisaligned {
-                ExceptionType::StoreAmoAccessFault
-            } else {
-                exc.exc_type
-            };
-
-            Exception::new(exc_type, exc.get_val())
-        })?;
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
     let rs2_val = core.read_reg(instr.rs2);
 
@@ -93,17 +73,7 @@ pub fn amoswap_w(
     core: &mut RVCore,
 ) -> Result<(), Exception> {
     let address = core.read_reg(instr.rs1);
-    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)
-        // TODO Cambiar cuando permita address missaligned (cambiarlo en los tests, me da pereza preparar el entorno en el portatil)
-        .map_err(|exc| {
-            let exc_type = if exc.exc_type == ExceptionType::StoreAmoAddressMisaligned {
-                ExceptionType::StoreAmoAccessFault
-            } else {
-                exc.exc_type
-            };
-
-            Exception::new(exc_type, exc.get_val())
-        })?;
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
     if !bus.check_pma(&phys_address, AccessType::StoreAmo) {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
@@ -127,17 +97,7 @@ pub fn amoadd_w(
     core: &mut RVCore,
 ) -> Result<(), Exception> {
     let address = core.read_reg(instr.rs1);
-    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)
-        // TODO Cambiar cuando permita address missaligned (cambiarlo en los tests, me da pereza preparar el entorno en el portatil)
-        .map_err(|exc| {
-            let exc_type = if exc.exc_type == ExceptionType::StoreAmoAddressMisaligned {
-                ExceptionType::StoreAmoAccessFault
-            } else {
-                exc.exc_type
-            };
-
-            Exception::new(exc_type, exc.get_val())
-        })?;
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
     if phys_address.0 % 4 != 0 {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
@@ -165,17 +125,7 @@ pub fn amoand_w(
     core: &mut RVCore,
 ) -> Result<(), Exception> {
     let address = core.read_reg(instr.rs1);
-    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)
-        // TODO Cambiar cuando permita address missaligned (cambiarlo en los tests, me da pereza preparar el entorno en el portatil)
-        .map_err(|exc| {
-            let exc_type = if exc.exc_type == ExceptionType::StoreAmoAddressMisaligned {
-                ExceptionType::StoreAmoAccessFault
-            } else {
-                exc.exc_type
-            };
-
-            Exception::new(exc_type, exc.get_val())
-        })?;
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
     if phys_address.0 % 4 != 0 {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
@@ -203,17 +153,7 @@ pub fn amoor_w(
     core: &mut RVCore,
 ) -> Result<(), Exception> {
     let address = core.read_reg(instr.rs1);
-    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)
-        // TODO Cambiar cuando permita address missaligned (cambiarlo en los tests, me da pereza preparar el entorno en el portatil)
-        .map_err(|exc| {
-            let exc_type = if exc.exc_type == ExceptionType::StoreAmoAddressMisaligned {
-                ExceptionType::StoreAmoAccessFault
-            } else {
-                exc.exc_type
-            };
-
-            Exception::new(exc_type, exc.get_val())
-        })?;
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
     if phys_address.0 % 4 != 0 {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
@@ -241,17 +181,7 @@ pub fn amoxor_w(
     core: &mut RVCore,
 ) -> Result<(), Exception> {
     let address = core.read_reg(instr.rs1);
-    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)
-        // TODO Cambiar cuando permita address missaligned (cambiarlo en los tests, me da pereza preparar el entorno en el portatil)
-        .map_err(|exc| {
-            let exc_type = if exc.exc_type == ExceptionType::StoreAmoAddressMisaligned {
-                ExceptionType::StoreAmoAccessFault
-            } else {
-                exc.exc_type
-            };
-
-            Exception::new(exc_type, exc.get_val())
-        })?;
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
     if phys_address.0 % 4 != 0 {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
@@ -279,17 +209,7 @@ pub fn amomax_w(
     core: &mut RVCore,
 ) -> Result<(), Exception> {
     let address = core.read_reg(instr.rs1);
-    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)
-        // TODO Cambiar cuando permita address missaligned (cambiarlo en los tests, me da pereza preparar el entorno en el portatil)
-        .map_err(|exc| {
-            let exc_type = if exc.exc_type == ExceptionType::StoreAmoAddressMisaligned {
-                ExceptionType::StoreAmoAccessFault
-            } else {
-                exc.exc_type
-            };
-
-            Exception::new(exc_type, exc.get_val())
-        })?;
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
     if phys_address.0 % 4 != 0 {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
@@ -320,17 +240,7 @@ pub fn amomin_w(
     core: &mut RVCore,
 ) -> Result<(), Exception> {
     let address = core.read_reg(instr.rs1);
-    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)
-        // TODO Cambiar cuando permita address missaligned (cambiarlo en los tests, me da pereza preparar el entorno en el portatil)
-        .map_err(|exc| {
-            let exc_type = if exc.exc_type == ExceptionType::StoreAmoAddressMisaligned {
-                ExceptionType::StoreAmoAccessFault
-            } else {
-                exc.exc_type
-            };
-
-            Exception::new(exc_type, exc.get_val())
-        })?;
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
     if phys_address.0 % 4 != 0 {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
@@ -361,17 +271,7 @@ pub fn amomaxu_w(
     core: &mut RVCore,
 ) -> Result<(), Exception> {
     let address = core.read_reg(instr.rs1);
-    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)
-        // TODO Cambiar cuando permita address missaligned (cambiarlo en los tests, me da pereza preparar el entorno en el portatil)
-        .map_err(|exc| {
-            let exc_type = if exc.exc_type == ExceptionType::StoreAmoAddressMisaligned {
-                ExceptionType::StoreAmoAccessFault
-            } else {
-                exc.exc_type
-            };
-
-            Exception::new(exc_type, exc.get_val())
-        })?;
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
     if phys_address.0 % 4 != 0 {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
@@ -399,17 +299,7 @@ pub fn amominu_w(
     core: &mut RVCore,
 ) -> Result<(), Exception> {
     let address = core.read_reg(instr.rs1);
-    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)
-        // TODO Cambiar cuando permita address missaligned (cambiarlo en los tests, me da pereza preparar el entorno en el portatil)
-        .map_err(|exc| {
-            let exc_type = if exc.exc_type == ExceptionType::StoreAmoAddressMisaligned {
-                ExceptionType::StoreAmoAccessFault
-            } else {
-                exc.exc_type
-            };
-
-            Exception::new(exc_type, exc.get_val())
-        })?;
+    let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
     if phys_address.0 % 4 != 0 {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));

@@ -1,5 +1,5 @@
 {
-  "$schema": "/home/gonzalo/sail-riscv/share/sail-riscv/sail_riscv_config_schema.json",
+  "$schema": "https://github.com/riscv/sail-riscv/releases/download/0.14.1/sail_riscv_config_schema.json",
   "base": {
     "xlen": 32,
     "E": false,
@@ -53,6 +53,19 @@
         "base_alignment": 2
       }
     },
+    "vstvec": {
+      "direct": {
+        "supported": false
+      },
+      "vectored": {
+        "supported": false,
+        "base_alignment": 2
+      }
+    },
+    "hcounteren_writable_bits":  {
+      "len": 32,
+      "value": "0xFFFF_FFFF"
+    },
     "medeleg": {
       // A bit set to 1 in this value specifies that the corresponding
       // bit of `medeleg` can be set to 1. It represents the subset of
@@ -85,6 +98,10 @@
     // `xtval` registers.
     "xtval_nonzero": {
       "illegal_instruction": true,
+      "virtual_instruction": true,
+      "load_guest_page_fault": true,
+      "samo_guest_page_fault": true,
+      "fetch_guest_page_fault": true,
       "software_breakpoint": true,
       "hardware_breakpoint": true,
       "load_address_misaligned": true,
@@ -97,6 +114,7 @@
       "fetch_access_fault": true,
       "fetch_page_fault": true,
       "software_check": true,
+      "hardware_error": true,
       "reserved_exceptions": false
     },
     "reserved_behavior": {
@@ -150,6 +168,8 @@
     // bitvectors in the model and since it is unlikely real implementations
     // will have lower values.
     "physaddr_bits": 34,
+    "asidlen": 9,
+    "vmidlen": 14,
     "pmp": {
       "grain": 0,
       // This specifies the number of PMP entries present.
@@ -189,12 +209,12 @@
         // Similarly, a misaligned AMO currently always faults, and this field
         // can specify either `"AccessFault"` or `"AlignmentException"`.
         "amo": {
-          "Some": "AccessFault"
+          "Some": "AlignmentException"
         },
         // A misaligned LR/SC currently always faults, and this field can specify
         // whether it generates an access fault (use `"AccessFault"`)
         // or a misaligned exception (use `"AlignmentException"`).
-        "lrsc": "AccessFault"
+        "lrsc": {"Some": "AlignmentException"}
       },
       // If a misaligned access was specified to have no fault in `exceptions` above, the
       // fields below specify how it is handled.
@@ -231,7 +251,7 @@
     // region (see `memory.regions`).
     "dtb_address": {
       "len": 64,
-      "value": "0x1000"
+      "value": "0x100"
     },
     // The locations and sizes of memory regions and their PMAs.  These regions
     // are required to be aligned to 4K (page) boundaries.  To specify
@@ -242,11 +262,11 @@
       {
         "base": {
           "len": 64,
-          "value": "0x1000"
+          "value": "0x0000"
         },
         "size": {
           "len": 64,
-          "value": "0x1000"
+          "value": "0x8000"
         },
         "attributes": {
           "mem_type": "IOMemory",
@@ -264,7 +284,8 @@
             "vector": {
               "None": null
             },
-            "amo": "AccessFault"
+            "amo": "AccessFault",
+            "lrsc": "AccessFault"
           },
           "atomic_support": "AMONone",
           "misaligned_atomicity_granule_size_exp": 0,
@@ -302,7 +323,8 @@
             "vector": {
               "Some": "AlignmentException"
             },
-            "amo": "AccessFault"
+            "amo": "AlignmentException",
+            "lrsc": "AlignmentException"
           },
           "atomic_support": "AMONone",
           "misaligned_atomicity_granule_size_exp": 0,
@@ -322,7 +344,7 @@
         },
         "size": {
           "len": 64,
-          "value": "0x80000000"
+          "value": "0x00800000"
         },
         "attributes": {
           "mem_type": "MainMemory",
@@ -340,7 +362,8 @@
             "vector": {
               "None": null
             },
-            "amo": "AccessFault"
+            "amo": "AccessFault",
+            "lrsc": "AccessFault"
           },
           "atomic_support": "AMOArithmetic",
           "misaligned_atomicity_granule_size_exp": 4,
@@ -391,6 +414,19 @@
       // This must be in a suitable IO memory region (see `memory.regions`)
       // and 4-byte aligned. The size is always 0x20.
       "base": 201326592
+    },
+    "interrupts": {
+      "machine": {
+        "external": {
+          "supported": true
+        },
+        "software": {
+          "supported": true
+        },
+        "timer": {
+          "supported": true
+        }
+      }      
     },
     "clock_frequency": 1000000000,
     "instructions_per_tick": 1,
@@ -487,7 +523,18 @@
       "supported": false
     },
     "S": {
-      "supported": true
+      "supported": true,
+      "interrupts": {
+        "external": {
+          "supported": true
+        },
+        "software": {
+          "supported": true
+        },
+        "timer": {
+          "supported": true
+        }
+      }
     },
     "U": {
       "supported": true
@@ -797,6 +844,53 @@
       "supported": false
     },
     "Svvptc": {
+      "supported": false
+    },
+    "H": {
+      "supported": false,
+      "geilen": 0,
+      "guest_page_fault_writes_htval": false,
+      "hgatp_modes": {
+        "Sv32x4": false,
+        "Sv39x4": false,
+        "Sv48x4": false,
+        "Sv57x4": false
+      },
+      "vsatp_modes": {
+        "Sv32": false,
+        "Sv39": false,
+        "Sv48": false,
+        "Sv57": false
+      }
+    },
+    "Sha": {
+      "supported": false
+    },
+    "Shcounterenw": {
+      "supported": false
+    },
+    "Shgatpa": {
+      "supported": false
+    },
+    "Shtvala": {
+      "supported": false
+    },
+    "Shvsatpa": {
+      "supported": false
+    },
+    "Shvstvala": {
+      "supported": false
+    },
+    "Shvstvecd": {
+      "supported": false
+    },
+    "Sstvecd": {
+      "supported": false
+    },
+    "Svukte": {
+      "supported": false
+    },
+    "Zilx": {
       "supported": false
     }
   }

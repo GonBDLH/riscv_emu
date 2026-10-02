@@ -29,7 +29,7 @@ struct Args {
     #[arg(long)]
     headless: bool,
     #[arg(long, short)]
-    firmware: Option<String>
+    firmware: Option<String>,
 }
 
 fn main() {

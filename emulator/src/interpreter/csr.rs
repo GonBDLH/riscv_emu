@@ -1,12 +1,10 @@
 use crate::{
     interpreter::{
         bus::Bus,
-        csr,
         pmp::PmpCsrs,
         riscv_core::{ExceptionType, PrivilegeLevel},
         virtual_memory::sv32::{AccessType, PhysicalAddress},
-    },
-    peripherals::{CLINT_BASE, clint::MTIME_OFFSET},
+    }, peripherals::{CLINT_BASE, clint::{MSIP_OFFSET, MTIME_OFFSET}},
 };
 use bitfield::bitfield;
 
@@ -17,7 +15,7 @@ pub struct ControlAndStatus {
     // satp: Satp32,
     minstret_loaded: bool,
     minstret: u64,
-    cycle: u64,
+    mcycle: u64,
 }
 
 impl ControlAndStatus {
@@ -79,7 +77,8 @@ impl ControlAndStatus {
     const MISA_MASK_WRITE: u32 = 0b00000000000101000001000100000001;
     const MIE_MASK: u32 = 0x00000AAA;
     const MSTATUSH_MASK: u32 = 0x0;
-    const MIP_MASK: u32 = 0x0222;
+    const MIP_MASK_READ: u32 = 0x00000AAA;
+    const MIP_MASK_WRITE: u32 = 0x00000222;
     const MENVCFG_MASK: u32 = 0x0001;
     const MENVCFGH_MASK: u32 = 0xA000;
     const MEDELEG_MASK: u32 = 0x0004b3FE;
@@ -144,7 +143,7 @@ impl ControlAndStatus {
             pmp: PmpCsrs::default(),
             minstret_loaded: false,
             minstret: 0,
-            cycle: 0,
+            mcycle: 0,
         }
     }
 
@@ -183,7 +182,12 @@ impl ControlAndStatus {
             Self::MEPC => self.csrs[Self::MEPC],
             Self::MCAUSE => self.csrs[Self::MCAUSE],
             Self::MTVAL => self.csrs[Self::MTVAL],
-            Self::MIP => self.csrs[Self::MIP] & Self::MIP_MASK,
+            Self::MIP => {
+                // TODO No se si me convence, pero es lo mas simple
+                let msip = bus.read_byte(&PhysicalAddress((CLINT_BASE + MSIP_OFFSET) as u64)).unwrap();
+
+                (self.csrs[Self::MIP] | ((msip as u32 & 0b1) << 3)) & Self::MIP_MASK_READ
+            },
             Self::MTINST => self.csrs[Self::MTINST],
             Self::MTVAL2 => self.csrs[Self::MTVAL2],
 
@@ -194,10 +198,10 @@ impl ControlAndStatus {
 
             Self::MHPEVENT3..=Self::MHPEVENT31 => self.csrs[csr],
 
-            Self::MCYCLE => self.csrs[csr],
+            Self::MCYCLE => self.mcycle as u32,
             Self::MINSTRET => self.minstret as u32,
             Self::MHPMCOUNTER3..=Self::MHPMCOUNTER31 => self.csrs[csr],
-            Self::MCYCLEH => self.csrs[csr],
+            Self::MCYCLEH => (self.mcycle >> 32) as u32,
             Self::MINSTRETH => (self.minstret >> 32) as u32,
             Self::MHPMCOUNTER3H..=Self::MHPMCOUNTER31H => self.csrs[csr],
 
@@ -207,7 +211,7 @@ impl ControlAndStatus {
             Self::TSELECT => u32::MAX, // TODO Cambiar si se incluye el modo debug
 
             Self::SSTATUS => self.csrs[Self::MSTATUS] & Self::SSTATUS_MASK,
-            Self::SIE => self.csrs[Self::MIE] & Self::SIE_MASK,
+            Self::SIE => self.csrs[Self::MIE] & Self::SIE_MASK & self.csrs[Self::MIDELEG],
             Self::STVEC => self.csrs[Self::STVEC],
             Self::SCOUNTEREN => self.csrs[Self::SCOUNTEREN],
             Self::SENVCFG => self.csrs[Self::SENVCFG],
@@ -216,7 +220,7 @@ impl ControlAndStatus {
             Self::SEPC => self.csrs[Self::SEPC],
             Self::SCAUSE => self.csrs[Self::SCAUSE],
             Self::STVAL => self.csrs[Self::STVAL],
-            Self::SIP => self.csrs[Self::MIP] & Self::SIP_MASK_READ,
+            Self::SIP => self.csrs[Self::MIP] & Self::SIP_MASK_READ & self.csrs[Self::MIDELEG],
 
             Self::SATP => {
                 let mstatus = self.read_mstatus_unchecked();
@@ -228,125 +232,14 @@ impl ControlAndStatus {
                 self.csrs[Self::SATP]
             }
 
-            Self::CYCLE => {
-                if priv_level == PrivilegeLevel::Supervisor {
-                    if self.csrs[Self::MCOUNTEREN] & 1 != 0 {
-                        self.cycle as u32
-                    } else {
-                        return Err(ExceptionType::IllegalInstruction);
-                    }
-                } else if priv_level == PrivilegeLevel::User {
-                    if (self.csrs[Self::MCOUNTEREN] & 1 != 0) && (self.csrs[Self::SCOUNTEREN] & 1 != 0) {
-                        self.cycle as u32
-                    } else {
-                        return Err(ExceptionType::IllegalInstruction);
-                    }
-                } else {
-                    self.cycle as u32
-                }
-            }
-            Self::TIME => {
-                if priv_level == PrivilegeLevel::Supervisor {
-                    if self.csrs[Self::MCOUNTEREN] >> 1 & 1 != 0 {
-                        bus.read_word(&PhysicalAddress(CLINT_BASE as u64 + MTIME_OFFSET as u64))
-                            .unwrap()
-                    } else {
-                        return Err(ExceptionType::IllegalInstruction);
-                    }
-                } else if priv_level == PrivilegeLevel::User {
-                    if (self.csrs[Self::MCOUNTEREN] >> 1 & 1 != 0) && (self.csrs[Self::SCOUNTEREN] >> 1 & 1 != 0) {
-                        bus.read_word(&PhysicalAddress(CLINT_BASE as u64 + MTIME_OFFSET as u64))
-                            .unwrap()
-                    } else {
-                        return Err(ExceptionType::IllegalInstruction);
-                    }
-                } else {
-                    bus.read_word(&PhysicalAddress(CLINT_BASE as u64 + MTIME_OFFSET as u64))
-                        .unwrap()
-                }
-            }
-            Self::INSTRET => {
-                if priv_level == PrivilegeLevel::Supervisor {
-                    if self.csrs[Self::MCOUNTEREN] >> 2 & 1 != 0 {
-                        self.minstret as u32
-                    } else {
-                        return Err(ExceptionType::IllegalInstruction);
-                    }
-                } else if priv_level == PrivilegeLevel::User {
-                    if (self.csrs[Self::MCOUNTEREN] >> 2 & 1 != 0) && (self.csrs[Self::SCOUNTEREN] >> 2 & 1 != 0) {
-                        self.minstret as u32
-                    } else {
-                        return Err(ExceptionType::IllegalInstruction);
-                    }
-                } else {
-                    self.minstret as u32
-                }
-            }
-            Self::HPMCOUNTER3..=Self::HPMCOUNTER31 => {
-                let csr = (csr - Self::HPMCOUNTER3) + Self::MHPMCOUNTER3;
-                self.csrs[csr]
-            }
-            Self::CYCLEH => {
-                if priv_level == PrivilegeLevel::Supervisor {
-                    if self.csrs[Self::MCOUNTEREN] & 1 != 0 {
-                        (self.cycle >> 32) as u32
-                    } else {
-                        return Err(ExceptionType::IllegalInstruction);
-                    }
-                } else if priv_level == PrivilegeLevel::User {
-                    if (self.csrs[Self::MCOUNTEREN] & 1 != 0) && (self.csrs[Self::SCOUNTEREN] & 1 != 0) {
-                        (self.cycle >> 32) as u32
-                    } else {
-                        return Err(ExceptionType::IllegalInstruction);
-                    }
-                } else {
-                    (self.cycle >> 32) as u32
-                }
-            }
-            Self::TIMEH => {
-                if priv_level == PrivilegeLevel::Supervisor {
-                    if self.csrs[Self::MCOUNTEREN] >> 1 & 1 != 0 {
-                        bus.read_word(&PhysicalAddress(
-                            CLINT_BASE as u64 + MTIME_OFFSET as u64 + 4,
-                        ))
-                        .unwrap()
-                    } else {
-                        return Err(ExceptionType::IllegalInstruction);
-                    }
-                } else if priv_level == PrivilegeLevel::User {
-                    if (self.csrs[Self::MCOUNTEREN] >> 1 & 1 != 0) && (self.csrs[Self::SCOUNTEREN] >> 1 & 1 != 0) {
-                        bus.read_word(&PhysicalAddress(
-                            CLINT_BASE as u64 + MTIME_OFFSET as u64 + 4,
-                        ))
-                        .unwrap()
-                    } else {
-                        return Err(ExceptionType::IllegalInstruction);
-                    }
-                } else {
-                    bus.read_word(&PhysicalAddress(
-                        CLINT_BASE as u64 + MTIME_OFFSET as u64 + 4,
-                    ))
-                    .unwrap()
-                }
-            }
-            Self::INSTRETH => {
-                if priv_level == PrivilegeLevel::Supervisor {
-                    if self.csrs[Self::MCOUNTEREN] >> 2 & 1 != 0 {
-                        (self.minstret >> 32) as u32
-                    } else {
-                        return Err(ExceptionType::IllegalInstruction);
-                    }
-                } else if priv_level == PrivilegeLevel::User {
-                    if (self.csrs[Self::MCOUNTEREN] >> 2 & 1 != 0) && (self.csrs[Self::SCOUNTEREN] >> 2 & 1 != 0) {
-                        (self.minstret >> 32) as u32
-                    } else {
-                        return Err(ExceptionType::IllegalInstruction);
-                    }
-                } else {
-                    (self.minstret >> 32) as u32
-                }
-            }
-            Self::HPMCOUNTER3H..=Self::HPMCOUNTER31H => self.csrs[csr],
+            Self::CYCLE => self.read_cycle(priv_level)?,
+            Self::TIME => self.read_time(bus, priv_level)?,
+            Self::INSTRET => self.read_instret(priv_level)?,
+            Self::HPMCOUNTER3..=Self::HPMCOUNTER31 => self.read_hpmcounter(priv_level, csr - Self::HPMCOUNTER3)?,
+            Self::CYCLEH => self.read_cycleh(priv_level)?,
+            Self::TIMEH => self.read_timeh(bus, priv_level)?,
+            Self::INSTRETH => self.read_instreth(priv_level)?,
+            Self::HPMCOUNTER3H..=Self::HPMCOUNTER31H => self.read_hpmcounterh(priv_level, csr - Self::HPMCOUNTER3H)?,
 
             _ => {
                 // println!("READ {:03X}", csr);
@@ -478,7 +371,7 @@ impl ControlAndStatus {
             Self::MSTATUSH => self.csrs[Self::MSTATUSH] = val & Self::MSTATUSH_MASK,
             Self::MEDELEGH => self.csrs[Self::MEDELEGH] = val & Self::MEDELEGH_MASK,
 
-            Self::MIP => self.csrs[Self::MIP] = val & Self::MIP_MASK,
+            Self::MIP => self.csrs[Self::MIP] = val & Self::MIP_MASK_WRITE,
 
             Self::MINSTRET => {
                 self.minstret_loaded = true;
@@ -513,11 +406,11 @@ impl ControlAndStatus {
 
             Self::MCOUNTINHIBIT => self.csrs[csr] = val & Self::MCOUNTINHIBIT_MASK,
 
-            Self::MCYCLE => self.csrs[csr] = val,
+            Self::MCYCLE => self.mcycle = (self.mcycle & 0xFFFFFFFF00000000) | (val as u64),
             Self::MHPMCOUNTER3..=Self::MHPMCOUNTER31 => self.csrs[csr] = val,
             Self::MHPEVENT3..=Self::MHPEVENT31 => self.csrs[csr] = val,
-            
-            Self::MCYCLEH => self.csrs[csr] = val,
+
+            Self::MCYCLEH => self.mcycle = (self.mcycle & 0x00000000FFFFFFFF) | ((val as u64) << 32),
             Self::MHPMCOUNTER3H..=Self::MHPMCOUNTER31H => self.csrs[csr] = val,
 
             Self::PMPCFG0..=Self::PMPCFG15 => self.pmp.set_pmp_cfg(csr - Self::PMPCFG0, val),
@@ -527,12 +420,15 @@ impl ControlAndStatus {
             Self::SCAUSE => self.csrs[csr] = val,
             Self::STVAL => self.csrs[csr] = val,
             Self::SIP => {
+                let delegated = self.csrs[Self::MIDELEG] & Self::SIP_MASK_WRITE;
+
                 self.csrs[Self::MIP] =
-                    (self.csrs[Self::MIP] & !Self::SIP_MASK_WRITE) | (val & Self::SIP_MASK_WRITE)
+                    (self.csrs[Self::MIP] & !delegated) | (val & delegated);
             }
             Self::SIE => {
-                self.csrs[Self::MIE] =
-                    (self.csrs[Self::MIE] & !Self::SIE_MASK) | (val & Self::SIE_MASK)
+                let delegated = self.csrs[Self::MIDELEG] & Self::SIE_MASK;
+
+                self.csrs[Self::MIE] = (self.csrs[Self::MIE] & !delegated) | (val & delegated);
             }
 
             Self::SATP => {
@@ -588,8 +484,172 @@ impl ControlAndStatus {
         }
     }
 
-    pub fn inc_cycle(&mut self) {
-        self.cycle += 1;
+    pub fn inc_mcycle(&mut self) {
+        if (self.csrs[Self::MCOUNTINHIBIT] & 0b1) == 0 {
+            self.mcycle = self.mcycle.wrapping_add(1);
+        }
+    }
+
+    fn read_cycle(&self, priv_level: PrivilegeLevel) -> Result<u32, ExceptionType> {
+        if priv_level == PrivilegeLevel::Supervisor {
+            if self.csrs[Self::MCOUNTEREN] & 1 != 0 {
+                Ok(self.mcycle as u32)
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else if priv_level == PrivilegeLevel::User {
+            if (self.csrs[Self::MCOUNTEREN] & 1 != 0) && (self.csrs[Self::SCOUNTEREN] & 1 != 0) {
+                Ok(self.mcycle as u32)
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else {
+            Ok(self.mcycle as u32)
+        }
+    }
+
+    fn read_cycleh(&self, priv_level: PrivilegeLevel) -> Result<u32, ExceptionType> {
+        if priv_level == PrivilegeLevel::Supervisor {
+            if self.csrs[Self::MCOUNTEREN] & 1 != 0 {
+                Ok((self.mcycle >> 32) as u32)
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else if priv_level == PrivilegeLevel::User {
+            if (self.csrs[Self::MCOUNTEREN] & 1 != 0) && (self.csrs[Self::SCOUNTEREN] & 1 != 0) {
+                Ok((self.mcycle >> 32) as u32)
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else {
+            Ok((self.mcycle >> 32) as u32)
+        }
+    }
+
+    fn read_time(&self, bus: &Bus, priv_level: PrivilegeLevel) -> Result<u32, ExceptionType> {
+        if priv_level == PrivilegeLevel::Supervisor {
+            if self.csrs[Self::MCOUNTEREN] >> 1 & 1 != 0 {
+                bus.read_word(&PhysicalAddress(CLINT_BASE as u64 + MTIME_OFFSET as u64))
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else if priv_level == PrivilegeLevel::User {
+            if (self.csrs[Self::MCOUNTEREN] >> 1 & 1 != 0)
+                && (self.csrs[Self::SCOUNTEREN] >> 1 & 1 != 0)
+            {
+                bus.read_word(&PhysicalAddress(CLINT_BASE as u64 + MTIME_OFFSET as u64))
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else {
+            bus.read_word(&PhysicalAddress(CLINT_BASE as u64 + MTIME_OFFSET as u64))
+        }
+    }
+
+    fn read_timeh(&self, bus: &Bus, priv_level: PrivilegeLevel) -> Result<u32, ExceptionType> {
+        if priv_level == PrivilegeLevel::Supervisor {
+            if self.csrs[Self::MCOUNTEREN] >> 1 & 1 != 0 {
+                bus.read_word(&PhysicalAddress(
+                    CLINT_BASE as u64 + MTIME_OFFSET as u64 + 4,
+                ))
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else if priv_level == PrivilegeLevel::User {
+            if (self.csrs[Self::MCOUNTEREN] >> 1 & 1 != 0)
+                && (self.csrs[Self::SCOUNTEREN] >> 1 & 1 != 0)
+            {
+                bus.read_word(&PhysicalAddress(
+                    CLINT_BASE as u64 + MTIME_OFFSET as u64 + 4,
+                ))
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else {
+            bus.read_word(&PhysicalAddress(
+                CLINT_BASE as u64 + MTIME_OFFSET as u64 + 4,
+            ))
+        }
+    }
+
+    fn read_instret(&self, priv_level: PrivilegeLevel) -> Result<u32, ExceptionType> {
+        if priv_level == PrivilegeLevel::Supervisor {
+            if self.csrs[Self::MCOUNTEREN] >> 2 & 1 != 0 {
+                Ok(self.minstret as u32)
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else if priv_level == PrivilegeLevel::User {
+            if (self.csrs[Self::MCOUNTEREN] >> 2 & 1 != 0)
+                && (self.csrs[Self::SCOUNTEREN] >> 2 & 1 != 0)
+            {
+                Ok(self.minstret as u32)
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else {
+            Ok(self.minstret as u32)
+        }
+    }
+
+    fn read_instreth(&self, priv_level: PrivilegeLevel) -> Result<u32, ExceptionType> {
+        if priv_level == PrivilegeLevel::Supervisor {
+            if self.csrs[Self::MCOUNTEREN] >> 2 & 1 != 0 {
+                Ok((self.minstret >> 32) as u32)
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else if priv_level == PrivilegeLevel::User {
+            if (self.csrs[Self::MCOUNTEREN] >> 2 & 1 != 0)
+                && (self.csrs[Self::SCOUNTEREN] >> 2 & 1 != 0)
+            {
+                Ok((self.minstret >> 32) as u32)
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else {
+            Ok((self.minstret >> 32) as u32)
+        }
+    }
+
+    fn read_hpmcounter(&self, priv_level: PrivilegeLevel, counter: usize) -> Result<u32, ExceptionType> {
+        if priv_level == PrivilegeLevel::Supervisor {
+            if (self.csrs[Self::MCOUNTEREN] >> (3 + counter)) & 1 != 0 {
+                Ok(self.csrs[Self::MHPMCOUNTER3 + counter])
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else if priv_level == PrivilegeLevel::User {
+            if ((self.csrs[Self::MCOUNTEREN] >> (3 + counter)) & 1 != 0)
+                && (self.csrs[Self::SCOUNTEREN] >> (3 + counter) & 1 != 0)
+            {
+                Ok(self.csrs[Self::MHPMCOUNTER3 + counter])
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else {
+            Ok(self.csrs[Self::MHPMCOUNTER3 + counter])
+        }
+    }
+
+    fn read_hpmcounterh(&self, priv_level: PrivilegeLevel, counter: usize) -> Result<u32, ExceptionType> {
+        if priv_level == PrivilegeLevel::Supervisor {
+            if (self.csrs[Self::MCOUNTEREN] >> (3 + counter)) & 1 != 0 {
+                Ok(self.csrs[Self::MHPMCOUNTER3H + counter])
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else if priv_level == PrivilegeLevel::User {
+            if ((self.csrs[Self::MCOUNTEREN] >> (3 + counter)) & 1 != 0)
+                && (self.csrs[Self::SCOUNTEREN] >> (3 + counter) & 1 != 0)
+            {
+                Ok(self.csrs[Self::MHPMCOUNTER3H + counter])
+            } else {
+                Err(ExceptionType::IllegalInstruction)
+            }
+        } else {
+            Ok(self.csrs[Self::MHPMCOUNTER3H + counter])
+        }
     }
 }
 

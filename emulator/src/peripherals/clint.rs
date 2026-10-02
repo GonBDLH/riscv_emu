@@ -30,7 +30,7 @@ impl Peripheral for Clint {
     // TODO Ver si aqui hay que usar Duration o no (Es un RTC, deberia tener en cuenta solo el tiempo que se ejecuta el emulador, o el tiempo total?)
     fn update(&mut self, _duration: Duration) {
         let new_earlier = Instant::now();
-        self.mtime += (new_earlier.duration_since(self.earlier).as_nanos() / 100) as u64;
+        self.mtime = self.mtime.wrapping_add((new_earlier.duration_since(self.earlier).as_nanos() / 100) as u64);
         self.earlier = new_earlier;
     }
 
@@ -39,13 +39,6 @@ impl Peripheral for Clint {
     }
 
     fn read_byte(&self, address: usize) -> u8 {
-        // if address < 4 {
-        //     ((self.mtime >> (8 * address)) & 0xFF) as u8
-        // } else if address < 8 {
-        //     ((self.mtimecmp >> (8 * (address - 4))) & 0xFF) as u8
-        // } else {
-        //     0
-        // }
         match address {
             MTIME_OFFSET..MTIME_OFFSET_END => {
                 let byte = address - MTIME_OFFSET;
@@ -92,7 +85,7 @@ impl Peripheral for Clint {
 
                 let old_msip = self.msip;
                 let mut new_msip = old_msip & !(0xFF << (4 * byte));
-                new_msip |= (val as u32) << (4 * byte);
+                new_msip |= (val as u32 & 0b1) << (4 * byte);
 
                 self.msip = new_msip;
             }

@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use crate::interpreter::bus::Bus;
+use crate::interpreter::bus::ROM_BASE;
 use crate::interpreter::csr::*;
 use crate::interpreter::extensions::rv32a::*;
 use crate::interpreter::extensions::rv32c::*;
@@ -11,7 +12,6 @@ use crate::interpreter::extensions::rv32zicrs::*;
 use crate::interpreter::extensions::rv32zifencei::fence_i;
 use crate::interpreter::virtual_memory::sv32::AccessType;
 use crate::interpreter::virtual_memory::sv32::PhysicalAddress;
-use crate::interpreter::virtual_memory::sv32::translate_address;
 
 pub struct RVCore {
     // x0/zero -> Siempre 0
@@ -30,7 +30,7 @@ pub struct RVCore {
 
 impl Default for RVCore {
     fn default() -> Self {
-        Self {
+        let mut core = Self {
             registers: [0u32; 32],
             pc: 0x80000000,
             control_and_status: ControlAndStatus::new(0),
@@ -41,7 +41,12 @@ impl Default for RVCore {
             stalled: false,
 
             new_pc: 0
-        }
+        };
+
+        // DTB ADDRESS
+        core.registers[11] = (ROM_BASE + 0x100) as u32; 
+
+        core
     }
 }
 
@@ -749,8 +754,8 @@ impl RVCore {
 
     pub fn check_int_to_s(&self, int: InterruptType) -> bool {
         let sstatus = self.control_and_status.read_sstatus_unchecked();
-        let sip = self.control_and_status.read_sie_unchecked();
-        let sie = self.control_and_status.read_sip_unchecked();
+        let sip = self.control_and_status.read_sip_unchecked();
+        let sie = self.control_and_status.read_sie_unchecked();
 
         ((self.privilege_level == PrivilegeLevel::Supervisor && sstatus.get_sie())
             || (self.privilege_level as u32) < (PrivilegeLevel::Supervisor as u32))
@@ -1600,7 +1605,7 @@ fn handle_supervisor_trap(trap: &impl Trap, core: &mut RVCore, cause: u32) {
     core.privilege_level = PrivilegeLevel::Supervisor;
 
     core.control_and_status
-        .write_csr(ControlAndStatus::SEPC, core.privilege_level, core.pc)
+        .write_csr(ControlAndStatus::SEPC, core.privilege_level, core.get_pc())
         .unwrap();
     core.control_and_status
         .write_csr(ControlAndStatus::SCAUSE, core.privilege_level, cause)

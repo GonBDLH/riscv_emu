@@ -4,24 +4,21 @@ use std::{
     time::{Duration, Instant},
 };
 
-use elf::{ElfBytes, endian::LittleEndian};
+use elf::{ElfBytes, abi::ET_DYN, endian::LittleEndian};
 use ihex::{Reader, Record};
 
 #[cfg(feature = "semihosting")]
 use crate::interpreter::semihosting::semihosting;
 
 use crate::interpreter::{
-    bus::Bus,
-    csr::ControlAndStatus,
-    riscv_core::{
-        Exception, ExceptionType, InstructionType, Interrupt, InterruptType, PrivilegeLevel,
+    bus::{Bus, DRAM_BASE}, riscv_core::{
+        Exception, ExceptionType, InstructionType, Interrupt, InterruptType,
         RVCore, Trap, WithErrVal,
-    },
-    virtual_memory::sv32::{AccessType, PhysicalAddress, translate_address},
+    }, virtual_memory::sv32::{AccessType, PhysicalAddress, translate_address},
 };
 
 mod bus;
-mod csr;
+pub mod csr;
 mod extensions;
 mod pmp;
 pub mod riscv_core;
@@ -101,18 +98,38 @@ impl Interpreter {
         let slice = file_data.as_slice();
         let file = ElfBytes::<LittleEndian>::minimal_parse(slice).expect("Bad format");
 
+        let e_type = file.ehdr.e_type;
+
+        let mut min_dyn_addr = usize::MAX;
+
+        for phdr in file.segments().unwrap() {
+            if phdr.p_type == 1 {
+                let address = phdr.p_vaddr as usize;
+
+                if address < min_dyn_addr {
+                    min_dyn_addr = address;
+                }
+            }
+        }
+
         for phdr in file.segments().unwrap() {
             if phdr.p_type == 1 {
                 // PT_LOAD
                 let data = file.segment_data(&phdr).unwrap();
-                let phys_address = phdr.p_paddr as usize;
+                let address = phdr.p_vaddr as usize;
 
-                self.bus.load_section(data, phys_address);
+                let load_bias = if e_type == ET_DYN {
+                    DRAM_BASE - min_dyn_addr
+                } else {
+                    0
+                };
+
+                self.bus.load_section(data, address + load_bias);
 
                 if phdr.p_filesz != phdr.p_memsz {
                     self.bus.fill_zeros(
-                        phys_address + phdr.p_filesz as usize,
-                        phys_address + phdr.p_memsz as usize,
+                        address + load_bias + phdr.p_filesz as usize,
+                        address + load_bias + phdr.p_memsz as usize,
                     );
                 }
             }
@@ -130,8 +147,8 @@ impl Interpreter {
         // TODO Hay que cambiar esto para cuando se haga un fecth de 16 bits (C instr)
         let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute, 4)?;
 
-        if phys_pc.0 == 0x8000004c {
-            println!("!");
+        if phys_pc.0 == 0x80018830 {
+            println!("semihosting init");
         }
 
         if !self.bus.check_pma(&phys_pc, AccessType::Execute) {
@@ -209,6 +226,8 @@ impl Interpreter {
             int.handle(&mut self.core);
         }
 
+        // println!("{:08X}", self.core.get_pc());
+
         if let Err(exception) = self.core_step() {
             match exception.exc_type {
                 #[cfg(feature = "semihosting")]
@@ -217,7 +236,7 @@ impl Interpreter {
             }
         };
 
-        self.core.control_and_status.inc_cycle();
+        self.core.control_and_status.inc_mcycle();
         self.core.update_pc();
 
         None
@@ -236,21 +255,6 @@ impl Interpreter {
     }
 
     pub fn check_interrupt(&mut self) -> Option<Interrupt> {
-        let mip: u32 = self
-            .core
-            .control_and_status
-            // .read_csr(bus, ControlAndStatus::MIP, PrivilegeLevel::Machine)
-            .read_mip_unchecked();
-        let mie = self.core.control_and_status.read_mie_unchecked();
-        // .read_csr(bus, ControlAndStatus::MIE, PrivilegeLevel::Machine)
-        // .unwrap();
-
-        let pending = mip & mie;
-
-        if pending == 0 {
-            return None;
-        }
-
         // Prioridad: external > timer > software
         let candidates = [
             InterruptType::MachineExternalInt,
