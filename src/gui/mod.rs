@@ -65,7 +65,8 @@ impl GuiState {
                         if !running {
                             let mut interpreter = interpreter_clone.write().unwrap();
 
-                            interpreter.emulator_step(Duration::from_nanos(1));
+                            // TODO Mirar si usar el return
+                            let _ = interpreter.run_once();
                         }
                     }
                     Ok(Command::Quit) => {

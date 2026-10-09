@@ -9,5 +9,5 @@
 /rootfs
 
 perf*
-flamegraph.svg
+*.svg
 out.dtb

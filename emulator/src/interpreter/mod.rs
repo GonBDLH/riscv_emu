@@ -142,7 +142,7 @@ impl Interpreter {
         self.core = RVCore::default();
     }
 
-    pub fn fetch(&mut self) -> Result<u32, Exception> {
+    fn fetch(&mut self) -> Result<u32, Exception> {
         let pc = self.core.get_pc();
 
         // TODO Hay que cambiar esto para cuando se haga un fecth de 16 bits (C instr)
@@ -164,7 +164,7 @@ impl Interpreter {
         Ok(val)
     }
 
-    pub fn decode(&mut self, instr: u32) -> Result<InstructionType, Exception> {
+    fn decode(&mut self, instr: u32) -> Result<InstructionType, Exception> {
         let width_bits = instr & 0b11;
 
         if width_bits == 0b11 {
@@ -179,7 +179,7 @@ impl Interpreter {
         }
     }
 
-    pub fn core_step(&mut self) -> Result<(), Exception> {
+    fn core_step(&mut self) -> Result<(), Exception> {
         #![allow(unreachable_code)]
 
         if self.core.stalled {
@@ -223,9 +223,7 @@ impl Interpreter {
         Ok(())
     }
 
-    pub fn emulator_step(&mut self, duration: Duration) -> Option<u32> {
-        self.update_peripherals(duration);
-
+    fn emulator_step(&mut self) -> Option<u32> {
         // TODO Check interrupts
         if let Some(int) = self.check_interrupt() {
             int.handle(&mut self.core);
@@ -271,13 +269,13 @@ impl Interpreter {
             InterruptType::CounterOverflowInt,
         ];
 
-        for int_type in candidates {
-            if self.core.check_int_to_m(int_type, &self.bus) {
-                return Some(Interrupt::new(int_type, false));
-            } else if self.core.check_int_to_s(int_type) {
-                return Some(Interrupt::new(int_type, true));
-            }
-        }
+        // for int_type in candidates {
+        //     if self.core.check_int_to_m(int_type, &self.bus) {
+        //         return Some(Interrupt::new(int_type, false));
+        //     } else if self.core.check_int_to_s(int_type) {
+        //         return Some(Interrupt::new(int_type, true));
+        //     }
+        // }
 
         None
     }
@@ -297,21 +295,46 @@ impl Interpreter {
 
         loop {
             let now = Instant::now();
-            if let Some(ret) = self.emulator_step(now.duration_since(start)) {
-                return Some(ret);
+
+            for _ in 0..256 {
+                if let Some(ret) = self.emulator_step() {
+                    return Some(ret);
+                }
             }
+
+            self.update_peripherals(now.duration_since(start));
             start = now;
         }
     }
 
     pub fn run_time(&mut self, duration: Duration) -> Option<u32> {
         let start = Instant::now();
+        let mut start_inner = start;
 
         while Instant::now().duration_since(start) < duration {
-            if let Some(ret) = self.emulator_step(duration) {
-                return Some(ret);
+            let now = Instant::now();
+
+            for _ in 0..256 {
+                if let Some(ret) = self.emulator_step() {
+                    return Some(ret);
+                }
             }
+
+            self.update_peripherals(now.duration_since(start_inner));
+            start_inner = now;
         }
+
+        None
+    }
+
+    pub fn run_once(&mut self) -> Option<u32> {
+        let start = Instant::now();
+
+        if let Some(ret) = self.emulator_step() {
+            return Some(ret);
+        }
+
+        self.update_peripherals(Instant::now().duration_since(start));
 
         None
     }

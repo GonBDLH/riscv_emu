@@ -1457,7 +1457,7 @@ impl Trap for Exception {
         let prev_priv_level = core.privilege_level;
         let cause = self.get_cause();
 
-        println!("EXC {cause}");
+        // println!("EXC {cause}");
 
         let delegated = {
             let medelegl = core.control_and_status.read_medeleg_unchecked();

@@ -4,11 +4,13 @@ use crate::interpreter::{
     riscv_core::PrivilegeLevel, virtual_memory::sv32::{AccessType, PhysicalAddress},
 };
 
-const PMPCFG_MASK: u32 = 0x9F;
+const PMPCFG_MASK: u8 = 0x9F;
 
 pub struct PmpCsrs {
     pmp_cfg: [u32; 16],
     pmp_addr: [u32; 64],
+
+    locked_entries: usize
 }
 
 impl Default for PmpCsrs {
@@ -16,6 +18,8 @@ impl Default for PmpCsrs {
         Self {
             pmp_cfg: [0; 16],
             pmp_addr: [0; 64],
+
+            locked_entries: 0
         }
     }
 }
@@ -36,13 +40,17 @@ impl PmpCsrs {
         let mut new_val = 0;
 
         for i in 0..4 {
-            let val_sub = (val >> (i * 8)) & 0xFF;
-            let pmpcfg_entry = self.get_pmp_cfg_entry(4 * pmp_csr + i);
-            if pmpcfg_entry.get_l() {
+            let new_pmpcfg_entry = PmpCfgEntry::new(((val >> (i * 8)) & 0xFF) as u8);
+            let prev_pmpcfg_entry = self.get_pmp_cfg_entry(4 * pmp_csr + i);
+            if prev_pmpcfg_entry.get_l() {
                 // lock bit set
-                new_val |= (pmpcfg_entry.0 as u32) << (i * 8);
+                new_val |= (prev_pmpcfg_entry.0 as u32) << (i * 8);
             } else {
-                new_val |= (val_sub & PMPCFG_MASK) << (i * 8); 
+                new_val |= (new_pmpcfg_entry.0 as u32) << (i * 8);
+            }
+
+            if new_pmpcfg_entry.get_l() && !prev_pmpcfg_entry.get_l() {
+                self.locked_entries += 1;
             }
         }
         self.pmp_cfg[pmp_csr] = new_val;
@@ -81,6 +89,9 @@ impl PmpCsrs {
         address: PhysicalAddress,
         access_length: u64,
     ) -> bool {
+        if priv_level == PrivilegeLevel::Machine && self.locked_entries == 0 {
+            return true;
+        }
 
         for (addr_idx, addr_entry) in self.pmp_addr.iter().enumerate() {
             let pmp_cfg_entry = self.get_pmp_cfg_entry(addr_idx);
@@ -143,6 +154,10 @@ bitfield! {
 }
 
 impl PmpCfgEntry {
+    fn new(val: u8) -> Self {
+        Self(val & PMPCFG_MASK)
+    }
+
     fn check_rwx(priv_level: PrivilegeLevel, perm_bit: bool, l: bool) -> bool {
         match priv_level {
             PrivilegeLevel::Machine if !l => true,

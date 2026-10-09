@@ -10,28 +10,30 @@ pub const MSIP_OFFSET: usize = 0x0;
 const MSIP_OFFSET_END: usize = MSIP_OFFSET + 4;
 
 pub struct Clint {
-    earlier: Instant,
+    // earlier: Instant,
 
     pub mtime: u64,
     pub mtimecmp: u64,
     msip: u32,
+
+    // update_cycles: u64
 }
 
 impl Peripheral for Clint {
     fn new() -> Self {
         Self {
-            earlier: Instant::now(),
+            // earlier: Instant::now(),
             mtime: 0,
             mtimecmp: 0,
-            msip: 0
+            msip: 0,
+
+            // update_cycles: 250
         }
     }
 
     // TODO Ver si aqui hay que usar Duration o no (Es un RTC, deberia tener en cuenta solo el tiempo que se ejecuta el emulador, o el tiempo total?)
-    fn update(&mut self, _duration: Duration) {
-        let new_earlier = Instant::now();
-        self.mtime = self.mtime.wrapping_add((new_earlier.duration_since(self.earlier).as_nanos() / 1000) as u64);
-        self.earlier = new_earlier;
+    fn update(&mut self, duration: Duration) {
+        self.mtime = self.mtime.wrapping_add(duration.as_micros() as u64);
     }
 
     fn has_interrupt(&mut self) -> bool {
