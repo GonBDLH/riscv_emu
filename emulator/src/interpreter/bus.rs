@@ -9,7 +9,7 @@ use crate::{
 };
 
 pub const DRAM_BASE: usize = 0x80000000;
-pub const DRAM_SIZE: usize = 16 * 1024 * 1024;
+pub const DRAM_SIZE: usize = 128 * 1024 * 1024;
 pub const DRAM_END: usize = DRAM_BASE + DRAM_SIZE;
 
 pub const ROM_BASE: usize = 0x00000000;
@@ -51,7 +51,7 @@ impl Default for Bus {
 }
 
 impl Bus {
-    pub fn read_byte(&self, phys_address: &PhysicalAddress) -> Result<u8, ExceptionType> {
+    pub fn read_byte(&self, phys_address: PhysicalAddress) -> Result<u8, ExceptionType> {
         let address = phys_address.0 as usize;
 
         match address {
@@ -64,7 +64,7 @@ impl Bus {
 
     pub fn write_byte(
         &mut self,
-        phys_address: &PhysicalAddress,
+        phys_address: PhysicalAddress,
         val: u8,
     ) -> Result<(), ExceptionType> {
         let address = phys_address.0 as usize;
@@ -91,45 +91,45 @@ impl Bus {
         }
     }
 
-    pub fn read_aligned_word(&self, phys_address: &PhysicalAddress) -> Result<u32, ExceptionType> {
+    pub fn read_aligned_word(&self, phys_address: PhysicalAddress) -> Result<u32, ExceptionType> {
         if phys_address.0 % 4 != 0 {
             return Err(ExceptionType::LoadAddressMisaligned);
         }
 
         let val_0 = self.read_byte(phys_address)?;
-        let val_1 = self.read_byte(&phys_address.wrapping_add(1))?;
-        let val_2 = self.read_byte(&phys_address.wrapping_add(2))?;
-        let val_3 = self.read_byte(&phys_address.wrapping_add(3))?;
+        let val_1 = self.read_byte(phys_address.wrapping_add(1))?;
+        let val_2 = self.read_byte(phys_address.wrapping_add(2))?;
+        let val_3 = self.read_byte(phys_address.wrapping_add(3))?;
 
         Ok(u32::from_le_bytes([val_0, val_1, val_2, val_3]))
     }
 
-    pub fn read_word(&self, phys_address: &PhysicalAddress) -> Result<u32, ExceptionType> {
+    pub fn read_word(&self, phys_address: PhysicalAddress) -> Result<u32, ExceptionType> {
         let val_0 = self.read_byte(phys_address)?;
-        let val_1 = self.read_byte(&phys_address.wrapping_add(1))?;
-        let val_2 = self.read_byte(&phys_address.wrapping_add(2))?;
-        let val_3 = self.read_byte(&phys_address.wrapping_add(3))?;
+        let val_1 = self.read_byte(phys_address.wrapping_add(1))?;
+        let val_2 = self.read_byte(phys_address.wrapping_add(2))?;
+        let val_3 = self.read_byte(phys_address.wrapping_add(3))?;
 
         Ok(u32::from_le_bytes([val_0, val_1, val_2, val_3]))
     }
 
     pub fn read_aligned_half_word(
         &self,
-        phys_address: &PhysicalAddress,
+        phys_address: PhysicalAddress,
     ) -> Result<u16, ExceptionType> {
         if phys_address.0 % 2 != 0 {
             return Err(ExceptionType::LoadAddressMisaligned);
         }
 
         let val_0 = self.read_byte(phys_address)?;
-        let val_1 = self.read_byte(&phys_address.wrapping_add(1))?;
+        let val_1 = self.read_byte(phys_address.wrapping_add(1))?;
 
         Ok(u16::from_le_bytes([val_0, val_1]))
     }
 
     pub fn write_aligned_half_word(
         &mut self,
-        phys_address: &PhysicalAddress,
+        phys_address: PhysicalAddress,
         half_word: u16,
     ) -> Result<(), ExceptionType> {
         if phys_address.0 % 2 != 0 {
@@ -138,14 +138,14 @@ impl Bus {
 
         let bytes = half_word.to_le_bytes();
         self.write_byte(phys_address, bytes[0])?;
-        self.write_byte(&phys_address.wrapping_add(1), bytes[1])?;
+        self.write_byte(phys_address.wrapping_add(1), bytes[1])?;
 
         Ok(())
     }
 
     pub fn write_aligned_word(
         &mut self,
-        phys_address: &PhysicalAddress,
+        phys_address: PhysicalAddress,
         word: u32
     ) -> Result<(), ExceptionType> {
         if phys_address.0 % 4 != 0 {
@@ -154,21 +154,27 @@ impl Bus {
 
         let bytes = word.to_le_bytes();
         self.write_byte(phys_address, bytes[0])?;
-        self.write_byte(&phys_address.wrapping_add(1), bytes[1])?;
-        self.write_byte(&phys_address.wrapping_add(2), bytes[2])?;
-        self.write_byte(&phys_address.wrapping_add(3), bytes[3])?;
+        self.write_byte(phys_address.wrapping_add(1), bytes[1])?;
+        self.write_byte(phys_address.wrapping_add(2), bytes[2])?;
+        self.write_byte(phys_address.wrapping_add(3), bytes[3])?;
 
         Ok(())
     }
 
-    pub fn check_pma(&self, phys_address: &PhysicalAddress, _acces_type: AccessType) -> bool {
+    pub fn check_pma(&self, phys_address: PhysicalAddress, acces_type: AccessType) -> bool {
         let address = phys_address.0 as usize;
 
-        // TODO Queda usar access_type
         match address {
+            ROM_BASE..ROM_END => {
+                acces_type == AccessType::Load || acces_type == AccessType::Execute
+            }
             DRAM_BASE..DRAM_END => true,
-            UART_BASE..UART_END => true,
-            CLINT_BASE..CLINT_END => true,
+            UART_BASE..UART_END => {
+                acces_type == AccessType::Load || acces_type == AccessType::StoreAmo
+            },
+            CLINT_BASE..CLINT_END => {
+                acces_type == AccessType::Load || acces_type == AccessType::StoreAmo
+            },
 
             _ => false,
         }
@@ -213,7 +219,7 @@ impl Bus {
 }
 
 impl Bus {
-    pub fn load_section(&mut self, data: &[u8], start: usize) {
+    pub fn load_data(&mut self, data: &[u8], start: usize) {
         assert!(start >= DRAM_BASE, "Invalid address {start}");
         assert!(start + data.len() <= DRAM_END, "Segment too big");
 

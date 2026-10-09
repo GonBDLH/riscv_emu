@@ -57,7 +57,7 @@ SYMBOL TABLE:
 00000000 l    d  .debug_aranges	00000000 .debug_aranges
 00000000 l    d  .debug_str	00000000 .debug_str
 00000000 l    d  .debug_rnglists	00000000 .debug_rnglists
-00000000 l    df *ABS*	00000000 cc3Lgyzi.o
+00000000 l    df *ABS*	00000000 ccuArQD9.o
 10000000 l       *ABS*	00000000 UART_BASE_ADDR
 10000000 l       *ABS*	00000000 UART_THR
 10000003 l       *ABS*	00000000 UART_LCR
@@ -1037,7 +1037,7 @@ main:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS   // skipped when the DUT has no reliably-faulting address
   // Test case 3-4: Test in M-Mode | Valid PTE | RWX set | Points to RVMODEL_ACCESS_FAULT_ADDRESS | expected = 4 faults
   SUPERPAGE_PTE_SETUP_SV32(RVMODEL_ACCESS_FAULT_ADDRESS, (PTE_D | PTE_A | PTE_X | PTE_W | PTE_R | PTE_V), va_data, LEVEL1)
-80000380:	10000513          	addi	x10,x0,256
+80000380:	70000537          	lui	x10,0x70000
 80000384:	00000013          	addi	x0,x0,0
 80000388:	00000013          	addi	x0,x0,0
 8000038c:	00000013          	addi	x0,x0,0
@@ -1070,7 +1070,7 @@ main:
 
   TEST_CASES_RUNNER Mmode, va_data, LEVEL1, test3, RVMODEL_ACCESS_FAULT_ADDRESS
 800003f4:	904007b7          	lui	x15,0x90400
-800003f8:	10000513          	addi	x10,x0,256
+800003f8:	70000537          	lui	x10,0x70000
 800003fc:	00a51513          	slli	x10,x10,0xa
 80000400:	00a55513          	srli	x10,x10,0xa
 80000404:	00a787b3          	add	x15,x15,x10
@@ -1118,7 +1118,7 @@ main:
   TEST_CASES_RUNNER Mmode, (va_data+0x2), LEVEL1, test4, RVMODEL_ACCESS_FAULT_ADDRESS
 80000498:	904007b7          	lui	x15,0x90400
 8000049c:	00278793          	addi	x15,x15,2 # 90400002 <_end+0x103ce002>
-800004a0:	10000513          	addi	x10,x0,256
+800004a0:	70000537          	lui	x10,0x70000
 800004a4:	00a51513          	slli	x10,x10,0xa
 800004a8:	00a55513          	srli	x10,x10,0xa
 800004ac:	00a787b3          	add	x15,x15,x10
@@ -1323,7 +1323,7 @@ main:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS   // skipped when the DUT has no reliably-faulting address
   // Test case 7-8: Test in M-Mode | Invalid PTE | RWX set | Points to RVMODEL_ACCESS_FAULT_ADDRESS | expected = 4 faults
   SUPERPAGE_PTE_SETUP_SV32(RVMODEL_ACCESS_FAULT_ADDRESS, (PTE_D | PTE_A | PTE_X | PTE_W | PTE_R), va_data, LEVEL1)
-80000760:	10000513          	addi	x10,x0,256
+80000760:	70000537          	lui	x10,0x70000
 80000764:	00000013          	addi	x0,x0,0
 80000768:	00000013          	addi	x0,x0,0
 8000076c:	00000013          	addi	x0,x0,0
@@ -1356,7 +1356,7 @@ main:
 
   TEST_CASES_RUNNER Mmode, va_data, LEVEL1, test7, RVMODEL_ACCESS_FAULT_ADDRESS
 800007d4:	904007b7          	lui	x15,0x90400
-800007d8:	10000513          	addi	x10,x0,256
+800007d8:	70000537          	lui	x10,0x70000
 800007dc:	00a51513          	slli	x10,x10,0xa
 800007e0:	00a55513          	srli	x10,x10,0xa
 800007e4:	00a787b3          	add	x15,x15,x10
@@ -1404,7 +1404,7 @@ main:
   TEST_CASES_RUNNER Mmode, (va_data+0x2), LEVEL1, test8, RVMODEL_ACCESS_FAULT_ADDRESS
 80000878:	904007b7          	lui	x15,0x90400
 8000087c:	00278793          	addi	x15,x15,2 # 90400002 <_end+0x103ce002>
-80000880:	10000513          	addi	x10,x0,256
+80000880:	70000537          	lui	x10,0x70000
 80000884:	00a51513          	slli	x10,x10,0xa
 80000888:	00a55513          	srli	x10,x10,0xa
 8000088c:	00a787b3          	add	x15,x15,x10
@@ -4388,9 +4388,9 @@ RVTEST_CODE_END
 800031b4:	04039c63          	bne	x7,x0,8000320c <sv_Mepc>
 
 800031b8 <vmem_adj_Mepc>:
-800031b8:	10000393          	addi	x7,x0,256
+800031b8:	700003b7          	lui	x7,0x70000
 800031bc:	04740863          	beq	x8,x7,8000320c <sv_Mepc>
-800031c0:	00238393          	addi	x7,x7,2
+800031c0:	00238393          	addi	x7,x7,2 # 70000002 <va_rvtest_code_begin+0x40000002>
 800031c4:	04740463          	beq	x8,x7,8000320c <sv_Mepc>
 800031c8:	04040263          	beq	x8,x0,8000320c <sv_Mepc>
 800031cc:	2084a383          	lw	x7,520(x9)
@@ -5037,9 +5037,9 @@ RVTEST_CODE_END
 80003b04:	06039063          	bne	x7,x0,80003b64 <sv_Sepc>
 
 80003b08 <vmem_adj_Sepc>:
-80003b08:	10000393          	addi	x7,x0,256
+80003b08:	700003b7          	lui	x7,0x70000
 80003b0c:	04740c63          	beq	x8,x7,80003b64 <sv_Sepc>
-80003b10:	00238393          	addi	x7,x7,2
+80003b10:	00238393          	addi	x7,x7,2 # 70000002 <va_rvtest_code_begin+0x40000002>
 80003b14:	04740863          	beq	x8,x7,80003b64 <sv_Sepc>
 80003b18:	04040663          	beq	x8,x0,80003b64 <sv_Sepc>
 80003b1c:	2084a383          	lw	x7,520(x9)

@@ -57,7 +57,7 @@ SYMBOL TABLE:
 00000000 l    d  .debug_aranges	00000000 .debug_aranges
 00000000 l    d  .debug_str	00000000 .debug_str
 00000000 l    d  .debug_rnglists	00000000 .debug_rnglists
-00000000 l    df *ABS*	00000000 cc4TLN6M.o
+00000000 l    df *ABS*	00000000 ccJFq03S.o
 10000000 l       *ABS*	00000000 UART_BASE_ADDR
 10000000 l       *ABS*	00000000 UART_THR
 10000003 l       *ABS*	00000000 UART_LCR
@@ -3093,7 +3093,7 @@ ExceptionsZc_cg_cp_store_address_misaligned_c_swsp_off7:
 
 # Testcase: c.lw with faulting address
   LI(x8, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001648:	10000413          	addi	x8,x0,256
+80001648:	70000437          	lui	x8,0x70000
 
 8000164c <ExceptionsZc_cg_cp_load_access_fault_c_lw_fault>:
 ExceptionsZc_cg_cp_load_access_fault_c_lw_fault:
@@ -3111,7 +3111,7 @@ ExceptionsZc_cg_cp_load_access_fault_c_lw_fault:
   mv x8, sp
 80001654:	840a                	c.mv	x8,x2
   LI(sp, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001656:	10000113          	addi	x2,x0,256
+80001656:	70000137          	lui	x2,0x70000
 
 8000165a <ExceptionsZc_cg_cp_load_access_fault_c_lwsp_fault>:
 ExceptionsZc_cg_cp_load_access_fault_c_lwsp_fault:
@@ -3132,7 +3132,7 @@ ExceptionsZc_cg_cp_load_access_fault_c_lwsp_fault:
 
 # Testcase: c.sw with faulting address
   LI(x15, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001664:	10000793          	addi	x15,x0,256
+80001664:	700007b7          	lui	x15,0x70000
 
 80001668 <ExceptionsZc_cg_cp_store_access_fault_c_sw_fault>:
 ExceptionsZc_cg_cp_store_access_fault_c_sw_fault:
@@ -3150,7 +3150,7 @@ ExceptionsZc_cg_cp_store_access_fault_c_sw_fault:
   mv x9, sp
 80001670:	848a                	c.mv	x9,x2
   LI(sp, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001672:	10000113          	addi	x2,x0,256
+80001672:	70000137          	lui	x2,0x70000
 
 80001676 <ExceptionsZc_cg_cp_store_access_fault_c_swsp_fault>:
 ExceptionsZc_cg_cp_store_access_fault_c_swsp_fault:
@@ -3684,7 +3684,7 @@ RVTEST_CODE_END
 
 80001d80 <trap_Mhandler>:
 80001d80:	34011173          	csrrw	x2,mscratch,x2
-80001d84:	26f12c23          	sw	x15,632(x2)
+80001d84:	26f12c23          	sw	x15,632(x2) # 70000278 <UART_LSR+0x60000273>
 80001d88:	13c007ef          	jal	x15,80001ec4 <common_Mhandler>
 80001d8c:	34011173          	csrrw	x2,mscratch,x2
 80001d90:	26f12c23          	sw	x15,632(x2)
@@ -4300,7 +4300,7 @@ RVTEST_CODE_END
 80002658:	0057d793          	srli	x15,x15,0x5
 8000265c:	00679793          	slli	x15,x15,0x6
 80002660:	0077e7b3          	or	x15,x15,x7
-80002664:	00378793          	addi	x15,x15,3
+80002664:	00378793          	addi	x15,x15,3 # 70000003 <UART_LSR+0x5ffffffe>
 80002668:	02075a63          	bge	x14,x0,8000269c <sv_Mvect+0x54>
 8000266c:	00f00413          	addi	x8,x0,15
 80002670:	00877433          	and	x8,x14,x8
@@ -4375,9 +4375,9 @@ RVTEST_CODE_END
 80002774:	04039c63          	bne	x7,x0,800027cc <sv_Mepc>
 
 80002778 <vmem_adj_Mepc>:
-80002778:	10000393          	addi	x7,x0,256
+80002778:	700003b7          	lui	x7,0x70000
 8000277c:	04740863          	beq	x8,x7,800027cc <sv_Mepc>
-80002780:	00238393          	addi	x7,x7,2
+80002780:	00238393          	addi	x7,x7,2 # 70000002 <UART_LSR+0x5ffffffd>
 80002784:	04740463          	beq	x8,x7,800027cc <sv_Mepc>
 80002788:	04040263          	beq	x8,x0,800027cc <sv_Mepc>
 8000278c:	2084a383          	lw	x7,520(x9)
@@ -5024,9 +5024,9 @@ RVTEST_CODE_END
 800030c4:	06039063          	bne	x7,x0,80003124 <sv_Sepc>
 
 800030c8 <vmem_adj_Sepc>:
-800030c8:	10000393          	addi	x7,x0,256
+800030c8:	700003b7          	lui	x7,0x70000
 800030cc:	04740c63          	beq	x8,x7,80003124 <sv_Sepc>
-800030d0:	00238393          	addi	x7,x7,2
+800030d0:	00238393          	addi	x7,x7,2 # 70000002 <UART_LSR+0x5ffffffd>
 800030d4:	04740863          	beq	x8,x7,80003124 <sv_Sepc>
 800030d8:	04040663          	beq	x8,x0,80003124 <sv_Sepc>
 800030dc:	2084a383          	lw	x7,520(x9)

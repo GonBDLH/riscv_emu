@@ -159,7 +159,7 @@
 
 ##### Access Fault #####
 
-#define RVMODEL_ACCESS_FAULT_ADDRESS 0x00000100
+#define RVMODEL_ACCESS_FAULT_ADDRESS 0x70000000
 
 ##### Machine Timer #####
 

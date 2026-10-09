@@ -227,7 +227,7 @@ pub fn lb(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::Load, 1)?;
 
-    let mem_val = bus.read_byte(&phys_address).with_err_val(address)?;
+    let mem_val = bus.read_byte(phys_address).with_err_val(address)?;
     let extend_val = (mem_val & 0b10000000 > 0) as u8 * 0xFF;
 
     let val = u32::from_le_bytes([mem_val, extend_val, extend_val, extend_val]);
@@ -244,7 +244,7 @@ pub fn lh(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let phys_address = translate_address(core, bus, address, AccessType::Load, 2)?;
 
     let val = bus
-        .read_aligned_half_word(&phys_address)
+        .read_aligned_half_word(phys_address)
         .with_err_val(address)?;
 
     let val = sign_extend16to32(val, 16);
@@ -262,7 +262,7 @@ pub fn lw(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let phys_address = translate_address(core, bus, address, AccessType::Load, 4)?;
 
     let val = bus
-        .read_aligned_word(&phys_address)
+        .read_aligned_word(phys_address)
         .with_err_val(address)?;
 
     core.write_reg(instr.rd, val);
@@ -277,7 +277,7 @@ pub fn lbu(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(),
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::Load, 1)?;
 
-    let val = bus.read_byte(&phys_address).with_err_val(address)? as u32;
+    let val = bus.read_byte(phys_address).with_err_val(address)? as u32;
     core.write_reg(instr.rd, val);
 
     core.inc_pc(4);
@@ -291,7 +291,7 @@ pub fn lhu(instr: &IInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(),
     let phys_address = translate_address(core, bus, address, AccessType::Load, 2)?;
 
     let val = bus
-        .read_aligned_half_word(&phys_address)
+        .read_aligned_half_word(phys_address)
         .with_err_val(address)?;
 
     core.write_reg(instr.rd, val as u32);
@@ -307,7 +307,7 @@ pub fn sb(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 1)?;
 
-    bus.write_byte(&phys_address, rs2_val as u8)
+    bus.write_byte(phys_address, rs2_val as u8)
         .with_err_val(address)?;
 
     core.inc_pc(4);
@@ -321,7 +321,7 @@ pub fn sh(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
     let address = rs1_val.wrapping_add(instr.imm);
     let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 2)?;
 
-    bus.write_aligned_half_word(&phys_address, rs2_val as u16)
+    bus.write_aligned_half_word(phys_address, rs2_val as u16)
         .with_err_val(address)?;
 
     core.inc_pc(4);
@@ -336,7 +336,7 @@ pub fn sw(instr: &SInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(), 
 
     let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
-    bus.write_aligned_word(&phys_address, rs2_val)
+    bus.write_aligned_word(phys_address, rs2_val)
         .with_err_val(address)?;
 
     core.inc_pc(4);

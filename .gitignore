@@ -5,3 +5,9 @@
 
 /riscof_tests
 /fw
+
+/rootfs
+
+perf*
+flamegraph.svg
+out.dtb

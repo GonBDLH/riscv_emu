@@ -8,7 +8,8 @@
     #size-cells = <1>;
 
     chosen {
-        stdout-path = "/soc/serial@10000000";
+        stdout-path = "/soc/uart@10000000";
+        bootargs = "earlycon=sbi keep_bootcon rdinit=/init ignore_loglevel loglevel=8";
     };
 
     cpus {
@@ -35,7 +36,7 @@
 
     memory@80000000 {
         device_type = "memory";
-        reg = <0x80000000 0x01000000>;
+        reg = <0x80000000 0x08000000>;
     };
 
     soc {

@@ -9,7 +9,7 @@ pub fn lr_w(instr: &AtomicInstruction, bus: &mut Bus, core: &mut RVCore) -> Resu
     let phys_address = translate_address(core, bus, address, AccessType::Load, 4)?;
 
     let val = bus
-        .read_aligned_word(&phys_address)
+        .read_aligned_word(phys_address)
         .with_err_val(address)
         .map_err(|exc| Exception::new(ExceptionType::LoadAccessFault, exc.get_val()))?;
     core.write_reg(instr.rd, val);
@@ -34,7 +34,7 @@ fn sc_w_inner(
 
     let rs2_val = core.read_reg(instr.rs2);
 
-    if !bus.check_pma(&phys_address, AccessType::StoreAmo) {
+    if !bus.check_pma(phys_address, AccessType::StoreAmo) {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
@@ -43,7 +43,7 @@ fn sc_w_inner(
         phys_address.0 as usize,
         phys_address.0 as usize + 3,
     ) {
-        bus.write_aligned_word(&phys_address, rs2_val)
+        bus.write_aligned_word(phys_address, rs2_val)
             .with_err_val(address)
             .map_err(|exc| Exception::new(ExceptionType::StoreAmoAccessFault, exc.get_val()))?;
         core.write_reg(instr.rd, 0);
@@ -60,10 +60,6 @@ pub fn sc_w(instr: &AtomicInstruction, bus: &mut Bus, core: &mut RVCore) -> Resu
     let res = sc_w_inner(instr, bus, core);
     bus.invalidate_reserved_address(core.get_hartid());
 
-    if res.is_ok() {
-        core.inc_pc(4);
-    }
-
     res
 }
 
@@ -75,13 +71,13 @@ pub fn amoswap_w(
     let address = core.read_reg(instr.rs1);
     let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
-    if !bus.check_pma(&phys_address, AccessType::StoreAmo) {
+    if !bus.check_pma(phys_address, AccessType::StoreAmo) {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    let tmp = bus.read_word(&phys_address).with_err_val(address)?;
+    let tmp = bus.read_word(phys_address).with_err_val(address)?;
 
-    bus.write_aligned_word(&phys_address, core.read_reg(instr.rs2))
+    bus.write_aligned_word(phys_address, core.read_reg(instr.rs2))
         .with_err_val(address)?;
 
     core.write_reg(instr.rd, tmp);
@@ -103,13 +99,13 @@ pub fn amoadd_w(
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    if !bus.check_pma(&phys_address, AccessType::StoreAmo) {
+    if !bus.check_pma(phys_address, AccessType::StoreAmo) {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    let tmp = bus.read_word(&phys_address).with_err_val(address)?;
+    let tmp = bus.read_word(phys_address).with_err_val(address)?;
 
-    bus.write_aligned_word(&phys_address, tmp.wrapping_add(core.read_reg(instr.rs2)))
+    bus.write_aligned_word(phys_address, tmp.wrapping_add(core.read_reg(instr.rs2)))
         .with_err_val(address)?;
 
     core.write_reg(instr.rd, tmp);
@@ -131,13 +127,13 @@ pub fn amoand_w(
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    if !bus.check_pma(&phys_address, AccessType::StoreAmo) {
+    if !bus.check_pma(phys_address, AccessType::StoreAmo) {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    let tmp = bus.read_word(&phys_address).with_err_val(address)?;
+    let tmp = bus.read_word(phys_address).with_err_val(address)?;
 
-    bus.write_aligned_word(&phys_address, tmp & core.read_reg(instr.rs2))
+    bus.write_aligned_word(phys_address, tmp & core.read_reg(instr.rs2))
         .with_err_val(address)?;
 
     core.write_reg(instr.rd, tmp);
@@ -159,13 +155,13 @@ pub fn amoor_w(
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    if !bus.check_pma(&phys_address, AccessType::StoreAmo) {
+    if !bus.check_pma(phys_address, AccessType::StoreAmo) {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    let tmp = bus.read_word(&phys_address).with_err_val(address)?;
+    let tmp = bus.read_word(phys_address).with_err_val(address)?;
 
-    bus.write_aligned_word(&phys_address, tmp | core.read_reg(instr.rs2))
+    bus.write_aligned_word(phys_address, tmp | core.read_reg(instr.rs2))
         .with_err_val(address)?;
 
     core.write_reg(instr.rd, tmp);
@@ -187,13 +183,13 @@ pub fn amoxor_w(
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    if !bus.check_pma(&phys_address, AccessType::StoreAmo) {
+    if !bus.check_pma(phys_address, AccessType::StoreAmo) {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    let tmp = bus.read_word(&phys_address).with_err_val(address)?;
+    let tmp = bus.read_word(phys_address).with_err_val(address)?;
 
-    bus.write_aligned_word(&phys_address, tmp ^ core.read_reg(instr.rs2))
+    bus.write_aligned_word(phys_address, tmp ^ core.read_reg(instr.rs2))
         .with_err_val(address)?;
 
     core.write_reg(instr.rd, tmp);
@@ -215,14 +211,14 @@ pub fn amomax_w(
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    if !bus.check_pma(&phys_address, AccessType::StoreAmo) {
+    if !bus.check_pma(phys_address, AccessType::StoreAmo) {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    let tmp = bus.read_word(&phys_address).with_err_val(address)?;
+    let tmp = bus.read_word(phys_address).with_err_val(address)?;
 
     bus.write_aligned_word(
-        &phys_address,
+        phys_address,
         (tmp as i32).max(core.read_reg(instr.rs2) as i32) as u32,
     )
     .with_err_val(address)?;
@@ -246,14 +242,14 @@ pub fn amomin_w(
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    if !bus.check_pma(&phys_address, AccessType::StoreAmo) {
+    if !bus.check_pma(phys_address, AccessType::StoreAmo) {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    let tmp = bus.read_word(&phys_address).with_err_val(address)?;
+    let tmp = bus.read_word(phys_address).with_err_val(address)?;
 
     bus.write_aligned_word(
-        &phys_address,
+        phys_address,
         (tmp as i32).min(core.read_reg(instr.rs2) as i32) as u32
     )
     .with_err_val(address)?;
@@ -277,13 +273,13 @@ pub fn amomaxu_w(
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    if !bus.check_pma(&phys_address, AccessType::StoreAmo) {
+    if !bus.check_pma(phys_address, AccessType::StoreAmo) {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    let tmp = bus.read_word(&phys_address).with_err_val(address)?;
+    let tmp = bus.read_word(phys_address).with_err_val(address)?;
 
-    bus.write_aligned_word(&phys_address, tmp.max(core.read_reg(instr.rs2)))
+    bus.write_aligned_word(phys_address, tmp.max(core.read_reg(instr.rs2)))
         .with_err_val(address)?;
 
     core.write_reg(instr.rd, tmp);
@@ -305,13 +301,13 @@ pub fn amominu_w(
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    if !bus.check_pma(&phys_address, AccessType::StoreAmo) {
+    if !bus.check_pma(phys_address, AccessType::StoreAmo) {
         return Err(Exception::new(ExceptionType::StoreAmoAccessFault, address));
     }
 
-    let tmp = bus.read_word(&phys_address).with_err_val(address)?;
+    let tmp = bus.read_word(phys_address).with_err_val(address)?;
 
-    bus.write_aligned_word(&phys_address, tmp.min(core.read_reg(instr.rs2)))
+    bus.write_aligned_word(phys_address, tmp.min(core.read_reg(instr.rs2)))
         .with_err_val(address)?;
 
     core.write_reg(instr.rd, tmp);

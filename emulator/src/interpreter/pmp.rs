@@ -78,9 +78,10 @@ impl PmpCsrs {
         &self,
         priv_level: PrivilegeLevel,
         access_type: AccessType,
-        address: &PhysicalAddress,
+        address: PhysicalAddress,
         access_length: u64,
     ) -> bool {
+
         for (addr_idx, addr_entry) in self.pmp_addr.iter().enumerate() {
             let pmp_cfg_entry = self.get_pmp_cfg_entry(addr_idx);
             match pmp_cfg_entry.get_a() {

@@ -57,7 +57,7 @@ SYMBOL TABLE:
 00000000 l    d  .debug_aranges	00000000 .debug_aranges
 00000000 l    d  .debug_str	00000000 .debug_str
 00000000 l    d  .debug_rnglists	00000000 .debug_rnglists
-00000000 l    df *ABS*	00000000 ccAq7UB4.o
+00000000 l    df *ABS*	00000000 ccgBxWux.o
 10000000 l       *ABS*	00000000 UART_BASE_ADDR
 10000000 l       *ABS*	00000000 UART_THR
 10000003 l       *ABS*	00000000 UART_LCR
@@ -1478,7 +1478,7 @@ ExceptionsSm_cg_cp_instr_adr_misaligned_jalr_jalr_rs1_3_off_3:
 //   Instruction Access Fault
 /////////////////////////////////
   LA(x6, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000240:	10000313          	addi	x6,x0,256
+80000240:	70000337          	lui	x6,0x70000
 80000244:	00000013          	addi	x0,x0,0
 80000248:	00000013          	addi	x0,x0,0
 8000024c:	00000013          	addi	x0,x0,0
@@ -1490,7 +1490,7 @@ ExceptionsSm_cg_cp_instr_adr_misaligned_jalr_jalr_rs1_3_off_3:
 80000260 <ExceptionsSm_cg_cp_instr_access_fault_instr_access_fault>:
 ExceptionsSm_cg_cp_instr_access_fault_instr_access_fault:
   jalr x1, 0(x6)
-80000260:	000300e7          	jalr	x1,0(x6)
+80000260:	000300e7          	jalr	x1,0(x6) # 70000000 <UART_LSR+0x5ffffffb>
 80000264:	00000013          	addi	x0,x0,0
 80000268:	00000013          	addi	x0,x0,0
 8000026c:	00000013          	addi	x0,x0,0
@@ -2568,7 +2568,7 @@ ExceptionsSm_cg_cp_load_address_misaligned_lw_off7:
 
 # Testcase: lb access fault
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000c80:	10000493          	addi	x9,x0,256
+80000c80:	700004b7          	lui	x9,0x70000
 80000c84:	00000013          	addi	x0,x0,0
 80000c88:	00000013          	addi	x0,x0,0
 80000c8c:	00000013          	addi	x0,x0,0
@@ -2580,7 +2580,7 @@ ExceptionsSm_cg_cp_load_address_misaligned_lw_off7:
 80000ca0 <ExceptionsSm_cg_cp_load_access_fault_lb_fault>:
 ExceptionsSm_cg_cp_load_access_fault_lb_fault:
   lb x15, 0(x9)
-80000ca0:	00048783          	lb	x15,0(x9)
+80000ca0:	00048783          	lb	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 80000ca4:	00000013          	addi	x0,x0,0
 80000ca8:	00000013          	addi	x0,x0,0
 80000cac:	00000013          	addi	x0,x0,0
@@ -2591,7 +2591,7 @@ ExceptionsSm_cg_cp_load_access_fault_lb_fault:
 
 # Testcase: lbu access fault
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000cc0:	10000493          	addi	x9,x0,256
+80000cc0:	700004b7          	lui	x9,0x70000
 80000cc4:	00000013          	addi	x0,x0,0
 80000cc8:	00000013          	addi	x0,x0,0
 80000ccc:	00000013          	addi	x0,x0,0
@@ -2603,7 +2603,7 @@ ExceptionsSm_cg_cp_load_access_fault_lb_fault:
 80000ce0 <ExceptionsSm_cg_cp_load_access_fault_lbu_fault>:
 ExceptionsSm_cg_cp_load_access_fault_lbu_fault:
   lbu x15, 0(x9)
-80000ce0:	0004c783          	lbu	x15,0(x9)
+80000ce0:	0004c783          	lbu	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 80000ce4:	00000013          	addi	x0,x0,0
 80000ce8:	00000013          	addi	x0,x0,0
 80000cec:	00000013          	addi	x0,x0,0
@@ -2614,7 +2614,7 @@ ExceptionsSm_cg_cp_load_access_fault_lbu_fault:
 
 # Testcase: lh access fault
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000d00:	10000493          	addi	x9,x0,256
+80000d00:	700004b7          	lui	x9,0x70000
 80000d04:	00000013          	addi	x0,x0,0
 80000d08:	00000013          	addi	x0,x0,0
 80000d0c:	00000013          	addi	x0,x0,0
@@ -2626,7 +2626,7 @@ ExceptionsSm_cg_cp_load_access_fault_lbu_fault:
 80000d20 <ExceptionsSm_cg_cp_load_access_fault_lh_fault>:
 ExceptionsSm_cg_cp_load_access_fault_lh_fault:
   lh x15, 0(x9)
-80000d20:	00049783          	lh	x15,0(x9)
+80000d20:	00049783          	lh	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 80000d24:	00000013          	addi	x0,x0,0
 80000d28:	00000013          	addi	x0,x0,0
 80000d2c:	00000013          	addi	x0,x0,0
@@ -2637,7 +2637,7 @@ ExceptionsSm_cg_cp_load_access_fault_lh_fault:
 
 # Testcase: lhu access fault
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000d40:	10000493          	addi	x9,x0,256
+80000d40:	700004b7          	lui	x9,0x70000
 80000d44:	00000013          	addi	x0,x0,0
 80000d48:	00000013          	addi	x0,x0,0
 80000d4c:	00000013          	addi	x0,x0,0
@@ -2649,7 +2649,7 @@ ExceptionsSm_cg_cp_load_access_fault_lh_fault:
 80000d60 <ExceptionsSm_cg_cp_load_access_fault_lhu_fault>:
 ExceptionsSm_cg_cp_load_access_fault_lhu_fault:
   lhu x15, 0(x9)
-80000d60:	0004d783          	lhu	x15,0(x9)
+80000d60:	0004d783          	lhu	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 80000d64:	00000013          	addi	x0,x0,0
 80000d68:	00000013          	addi	x0,x0,0
 80000d6c:	00000013          	addi	x0,x0,0
@@ -2660,7 +2660,7 @@ ExceptionsSm_cg_cp_load_access_fault_lhu_fault:
 
 # Testcase: lw access fault
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000d80:	10000493          	addi	x9,x0,256
+80000d80:	700004b7          	lui	x9,0x70000
 80000d84:	00000013          	addi	x0,x0,0
 80000d88:	00000013          	addi	x0,x0,0
 80000d8c:	00000013          	addi	x0,x0,0
@@ -2672,7 +2672,7 @@ ExceptionsSm_cg_cp_load_access_fault_lhu_fault:
 80000da0 <ExceptionsSm_cg_cp_load_access_fault_lw_fault>:
 ExceptionsSm_cg_cp_load_access_fault_lw_fault:
   lw x15, 0(x9)
-80000da0:	0004a783          	lw	x15,0(x9)
+80000da0:	0004a783          	lw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 // cp_store_address_misaligned
 //   Store Address Misaligned
 /////////////////////////////////
@@ -4578,18 +4578,18 @@ ExceptionsSm_cg_cp_store_address_misaligned_sw_off7:
 
 # Testcase: sb access fault
   LI(x6, RVMODEL_ACCESS_FAULT_ADDRESS)
-800022b0:	10000313          	addi	x6,x0,256
+800022b0:	70000337          	lui	x6,0x70000
   LI(x14, 0xAB)
 800022b4:	0ab00713          	addi	x14,x0,171
 
 800022b8 <ExceptionsSm_cg_cp_store_access_fault_sb_fault>:
 ExceptionsSm_cg_cp_store_access_fault_sb_fault:
   sb x14, 0(x6)
-800022b8:	00e30023          	sb	x14,0(x6)
+800022b8:	00e30023          	sb	x14,0(x6) # 70000000 <UART_LSR+0x5ffffffb>
 
 # Testcase: sh access fault
   LI(x6, RVMODEL_ACCESS_FAULT_ADDRESS)
-800022bc:	10000313          	addi	x6,x0,256
+800022bc:	70000337          	lui	x6,0x70000
   LI(x14, 0xBEAD)
 800022c0:	0000c737          	lui	x14,0xc
 800022c4:	ead70713          	addi	x14,x14,-339 # bead <CSR_XSATP+0xbd2d>
@@ -4597,11 +4597,11 @@ ExceptionsSm_cg_cp_store_access_fault_sb_fault:
 800022c8 <ExceptionsSm_cg_cp_store_access_fault_sh_fault>:
 ExceptionsSm_cg_cp_store_access_fault_sh_fault:
   sh x14, 0(x6)
-800022c8:	00e31023          	sh	x14,0(x6)
+800022c8:	00e31023          	sh	x14,0(x6) # 70000000 <UART_LSR+0x5ffffffb>
 
 # Testcase: sw access fault
   LI(x6, RVMODEL_ACCESS_FAULT_ADDRESS)
-800022cc:	10000313          	addi	x6,x0,256
+800022cc:	70000337          	lui	x6,0x70000
   LI(x14, 0xADDEDCAB)
 800022d0:	addee737          	lui	x14,0xaddee
 800022d4:	cab70713          	addi	x14,x14,-853 # addedcab <_end+0x2ddb5cab>
@@ -4609,7 +4609,7 @@ ExceptionsSm_cg_cp_store_access_fault_sh_fault:
 800022d8 <ExceptionsSm_cg_cp_store_access_fault_sw_fault>:
 ExceptionsSm_cg_cp_store_access_fault_sw_fault:
   sw x14, 0(x6)
-800022d8:	00e32023          	sw	x14,0(x6)
+800022d8:	00e32023          	sw	x14,0(x6) # 70000000 <UART_LSR+0x5ffffffb>
 800022dc:	00000013          	addi	x0,x0,0
 
 /////////////////////////////////
@@ -4617,7 +4617,7 @@ ExceptionsSm_cg_cp_store_access_fault_sw_fault:
 //   Misaligned Priority Load
 /////////////////////////////////
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800022e0:	10000493          	addi	x9,x0,256
+800022e0:	700004b7          	lui	x9,0x70000
 800022e4:	00000013          	addi	x0,x0,0
 800022e8:	00000013          	addi	x0,x0,0
 800022ec:	00000013          	addi	x0,x0,0
@@ -4626,7 +4626,7 @@ ExceptionsSm_cg_cp_store_access_fault_sw_fault:
 800022f8:	00000013          	addi	x0,x0,0
 800022fc:	00000013          	addi	x0,x0,0
   addi x13, x9, 0
-80002300:	00048693          	addi	x13,x9,0
+80002300:	00048693          	addi	x13,x9,0 # 70000000 <UART_LSR+0x5ffffffb>
 
 80002304 <ExceptionsSm_cg_cp_misaligned_priority_load_lh_off0_priority>:
 
@@ -4962,7 +4962,7 @@ ExceptionsSm_cg_cp_misaligned_priority_load_lbu_off7_priority:
 //   Misaligned Priority Store
 /////////////////////////////////
   LA(x8, RVMODEL_ACCESS_FAULT_ADDRESS)
-800023c0:	10000413          	addi	x8,x0,256
+800023c0:	70000437          	lui	x8,0x70000
 800023c4:	00000013          	addi	x0,x0,0
 800023c8:	00000013          	addi	x0,x0,0
 800023cc:	00000013          	addi	x0,x0,0
@@ -4971,7 +4971,7 @@ ExceptionsSm_cg_cp_misaligned_priority_load_lbu_off7_priority:
 800023d8:	00000013          	addi	x0,x0,0
 800023dc:	00000013          	addi	x0,x0,0
   addi x8, x8, 0
-800023e0:	00040413          	addi	x8,x8,0
+800023e0:	00040413          	addi	x8,x8,0 # 70000000 <UART_LSR+0x5ffffffb>
   LI(x13, 0xDECAFCAB)
 800023e4:	decb06b7          	lui	x13,0xdecb0
 800023e8:	cab68693          	addi	x13,x13,-853 # decafcab <_end+0x5ec77cab>
@@ -5004,7 +5004,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off0_priority:
 #endif
 
   LA(x8, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002400:	10000413          	addi	x8,x0,256
+80002400:	70000437          	lui	x8,0x70000
 80002404:	00000013          	addi	x0,x0,0
 80002408:	00000013          	addi	x0,x0,0
 8000240c:	00000013          	addi	x0,x0,0
@@ -5013,7 +5013,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off0_priority:
 80002418:	00000013          	addi	x0,x0,0
 8000241c:	00000013          	addi	x0,x0,0
   addi x8, x8, 1
-80002420:	00140413          	addi	x8,x8,1
+80002420:	00140413          	addi	x8,x8,1 # 70000001 <UART_LSR+0x5ffffffc>
   LI(x13, 0xDECAFCAB)
 80002424:	decb06b7          	lui	x13,0xdecb0
 80002428:	cab68693          	addi	x13,x13,-853 # decafcab <_end+0x5ec77cab>
@@ -5046,7 +5046,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off1_priority:
 #endif
 
   LA(x8, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002440:	10000413          	addi	x8,x0,256
+80002440:	70000437          	lui	x8,0x70000
 80002444:	00000013          	addi	x0,x0,0
 80002448:	00000013          	addi	x0,x0,0
 8000244c:	00000013          	addi	x0,x0,0
@@ -5055,7 +5055,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off1_priority:
 80002458:	00000013          	addi	x0,x0,0
 8000245c:	00000013          	addi	x0,x0,0
   addi x8, x8, 2
-80002460:	00240413          	addi	x8,x8,2
+80002460:	00240413          	addi	x8,x8,2 # 70000002 <UART_LSR+0x5ffffffd>
   LI(x13, 0xDECAFCAB)
 80002464:	decb06b7          	lui	x13,0xdecb0
 80002468:	cab68693          	addi	x13,x13,-853 # decafcab <_end+0x5ec77cab>
@@ -5088,7 +5088,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off2_priority:
 #endif
 
   LA(x8, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002480:	10000413          	addi	x8,x0,256
+80002480:	70000437          	lui	x8,0x70000
 80002484:	00000013          	addi	x0,x0,0
 80002488:	00000013          	addi	x0,x0,0
 8000248c:	00000013          	addi	x0,x0,0
@@ -5097,7 +5097,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off2_priority:
 80002498:	00000013          	addi	x0,x0,0
 8000249c:	00000013          	addi	x0,x0,0
   addi x8, x8, 3
-800024a0:	00340413          	addi	x8,x8,3
+800024a0:	00340413          	addi	x8,x8,3 # 70000003 <UART_LSR+0x5ffffffe>
   LI(x13, 0xDECAFCAB)
 800024a4:	decb06b7          	lui	x13,0xdecb0
 800024a8:	cab68693          	addi	x13,x13,-853 # decafcab <_end+0x5ec77cab>
@@ -5130,7 +5130,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off3_priority:
 #endif
 
   LA(x8, RVMODEL_ACCESS_FAULT_ADDRESS)
-800024c0:	10000413          	addi	x8,x0,256
+800024c0:	70000437          	lui	x8,0x70000
 800024c4:	00000013          	addi	x0,x0,0
 800024c8:	00000013          	addi	x0,x0,0
 800024cc:	00000013          	addi	x0,x0,0
@@ -5139,7 +5139,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off3_priority:
 800024d8:	00000013          	addi	x0,x0,0
 800024dc:	00000013          	addi	x0,x0,0
   addi x8, x8, 4
-800024e0:	00440413          	addi	x8,x8,4
+800024e0:	00440413          	addi	x8,x8,4 # 70000004 <UART_LSR+0x5fffffff>
   LI(x13, 0xDECAFCAB)
 800024e4:	decb06b7          	lui	x13,0xdecb0
 800024e8:	cab68693          	addi	x13,x13,-853 # decafcab <_end+0x5ec77cab>
@@ -5172,7 +5172,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off4_priority:
 #endif
 
   LA(x8, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002500:	10000413          	addi	x8,x0,256
+80002500:	70000437          	lui	x8,0x70000
 80002504:	00000013          	addi	x0,x0,0
 80002508:	00000013          	addi	x0,x0,0
 8000250c:	00000013          	addi	x0,x0,0
@@ -5181,7 +5181,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off4_priority:
 80002518:	00000013          	addi	x0,x0,0
 8000251c:	00000013          	addi	x0,x0,0
   addi x8, x8, 5
-80002520:	00540413          	addi	x8,x8,5
+80002520:	00540413          	addi	x8,x8,5 # 70000005 <UART_LSR+0x60000000>
   LI(x13, 0xDECAFCAB)
 80002524:	decb06b7          	lui	x13,0xdecb0
 80002528:	cab68693          	addi	x13,x13,-853 # decafcab <_end+0x5ec77cab>
@@ -5214,7 +5214,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off5_priority:
 #endif
 
   LA(x8, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002540:	10000413          	addi	x8,x0,256
+80002540:	70000437          	lui	x8,0x70000
 80002544:	00000013          	addi	x0,x0,0
 80002548:	00000013          	addi	x0,x0,0
 8000254c:	00000013          	addi	x0,x0,0
@@ -5223,7 +5223,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off5_priority:
 80002558:	00000013          	addi	x0,x0,0
 8000255c:	00000013          	addi	x0,x0,0
   addi x8, x8, 6
-80002560:	00640413          	addi	x8,x8,6
+80002560:	00640413          	addi	x8,x8,6 # 70000006 <UART_LSR+0x60000001>
   LI(x13, 0xDECAFCAB)
 80002564:	decb06b7          	lui	x13,0xdecb0
 80002568:	cab68693          	addi	x13,x13,-853 # decafcab <_end+0x5ec77cab>
@@ -5256,7 +5256,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off6_priority:
 #endif
 
   LA(x8, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002580:	10000413          	addi	x8,x0,256
+80002580:	70000437          	lui	x8,0x70000
 80002584:	00000013          	addi	x0,x0,0
 80002588:	00000013          	addi	x0,x0,0
 8000258c:	00000013          	addi	x0,x0,0
@@ -5265,7 +5265,7 @@ ExceptionsSm_cg_cp_misaligned_priority_store_sd_off6_priority:
 80002598:	00000013          	addi	x0,x0,0
 8000259c:	00000013          	addi	x0,x0,0
   addi x8, x8, 7
-800025a0:	00740413          	addi	x8,x8,7
+800025a0:	00740413          	addi	x8,x8,7 # 70000007 <UART_LSR+0x60000002>
   LI(x13, 0xDECAFCAB)
 800025a4:	decb06b7          	lui	x13,0xdecb0
 800025a8:	cab68693          	addi	x13,x13,-853 # decafcab <_end+0x5ec77cab>
@@ -5329,7 +5329,7 @@ misaligned_fetch_target_208:
 
 # misaligned fetch - non-existent (fault) address
   LA(x14, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002600:	10000713          	addi	x14,x0,256
+80002600:	70000737          	lui	x14,0x70000
 80002604:	00000013          	addi	x0,x0,0
 80002608:	00000013          	addi	x0,x0,0
 8000260c:	00000013          	addi	x0,x0,0
@@ -5338,7 +5338,7 @@ misaligned_fetch_target_208:
 80002618:	00000013          	addi	x0,x0,0
 8000261c:	00000013          	addi	x0,x0,0
   addi x14, x14, 2
-80002620:	00270713          	addi	x14,x14,2
+80002620:	00270713          	addi	x14,x14,2 # 70000002 <UART_LSR+0x5ffffffd>
 
 80002624 <ExceptionsSm_cg_cp_misaligned_priority_fetch_misaligned_nonexistent>:
 ExceptionsSm_cg_cp_misaligned_priority_fetch_misaligned_nonexistent:
@@ -7152,9 +7152,9 @@ RVTEST_CODE_END
 80003bb4:	04039c63          	bne	x7,x0,80003c0c <sv_Mepc>
 
 80003bb8 <vmem_adj_Mepc>:
-80003bb8:	10000393          	addi	x7,x0,256
+80003bb8:	700003b7          	lui	x7,0x70000
 80003bbc:	04740863          	beq	x8,x7,80003c0c <sv_Mepc>
-80003bc0:	00238393          	addi	x7,x7,2
+80003bc0:	00238393          	addi	x7,x7,2 # 70000002 <UART_LSR+0x5ffffffd>
 80003bc4:	04740463          	beq	x8,x7,80003c0c <sv_Mepc>
 80003bc8:	04040263          	beq	x8,x0,80003c0c <sv_Mepc>
 80003bcc:	2084a383          	lw	x7,520(x9)
@@ -7801,9 +7801,9 @@ RVTEST_CODE_END
 80004504:	06039063          	bne	x7,x0,80004564 <sv_Sepc>
 
 80004508 <vmem_adj_Sepc>:
-80004508:	10000393          	addi	x7,x0,256
+80004508:	700003b7          	lui	x7,0x70000
 8000450c:	04740c63          	beq	x8,x7,80004564 <sv_Sepc>
-80004510:	00238393          	addi	x7,x7,2
+80004510:	00238393          	addi	x7,x7,2 # 70000002 <UART_LSR+0x5ffffffd>
 80004514:	04740863          	beq	x8,x7,80004564 <sv_Sepc>
 80004518:	04040663          	beq	x8,x0,80004564 <sv_Sepc>
 8000451c:	2084a383          	lw	x7,520(x9)

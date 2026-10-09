@@ -16,7 +16,7 @@ pub fn c_lwsp(instr: &CIInstruction, bus: &mut Bus, core: &mut RVCore) -> Result
     let address = core.read_reg(2).wrapping_add(offset as u32);
     let phys_address = translate_address(core, bus, address, AccessType::Load, 4)?;
 
-    let val = bus.read_aligned_word(&phys_address).with_err_val(address)?;
+    let val = bus.read_aligned_word(phys_address).with_err_val(address)?;
 
     core.write_reg(instr.rd_rs1 as u32, val);
 
@@ -33,7 +33,7 @@ pub fn c_swsp(instr: &CSSInstruction, bus: &mut Bus, core: &mut RVCore) -> Resul
     let address = core.read_reg(2).wrapping_add(offset as u32);
     let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
-    bus.write_aligned_word(&phys_address, core.read_reg(instr.rs2 as u32))
+    bus.write_aligned_word(phys_address, core.read_reg(instr.rs2 as u32))
         .with_err_val(address)?;
 
     core.inc_pc(2);
@@ -52,7 +52,7 @@ pub fn c_lw(instr: &CLInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(
         .wrapping_add(offset as u32);
     let phys_address = translate_address(core, bus, address, AccessType::Load, 4)?;
 
-    let val = bus.read_aligned_word(&phys_address).with_err_val(address)?;
+    let val = bus.read_aligned_word(phys_address).with_err_val(address)?;
 
     core.write_reg(instr.rd_p as u32 + 8, val);
 
@@ -72,7 +72,7 @@ pub fn c_sw(instr: &CSInstruction, bus: &mut Bus, core: &mut RVCore) -> Result<(
         .wrapping_add(offset as u32);
     let phys_address = translate_address(core, bus, address, AccessType::StoreAmo, 4)?;
 
-    bus.write_aligned_word(&phys_address, core.read_reg(instr.rs2_p as u32 + 8))
+    bus.write_aligned_word(phys_address, core.read_reg(instr.rs2_p as u32 + 8))
         .with_err_val(address)?;
 
     core.inc_pc(2);

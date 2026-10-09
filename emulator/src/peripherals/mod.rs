@@ -61,8 +61,8 @@ impl Mmio {
         if self.clint.has_interrupt() {
             Some(InterruptType::MachineTimerInt)
         } else if self.uart.has_interrupt() {
-            // Some(InterruptType::MachineExternalInt)
-            todo!()
+            Some(InterruptType::MachineExternalInt)
+            // todo!()
         } else {
             None
         }

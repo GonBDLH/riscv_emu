@@ -1,11 +1,11 @@
 use clap::Parser;
-use emulator::interpreter::Interpreter;
+use emulator::interpreter::{Interpreter, bus::DRAM_BASE};
 
 use crate::gui::GuiState;
 
 mod gui;
 
-fn main_headless(firmware_path: Option<String>) {
+fn main_headless(args: Args) {
     let mut interpreter = Interpreter::default();
 
     // let elf_file = interpreter.load_elf("elf/rv32uc-p-rvc");
@@ -15,9 +15,14 @@ fn main_headless(firmware_path: Option<String>) {
     // interpreter.load_elf("elf_tests/rv32ui-p-add");
     // interpreter.load_hex("bin/xv6_32/kernel.hex");
     // interpreter.load_bin("fw/fw_jump.bin");
-    if let Some(fw) = firmware_path {
-        interpreter.load_elf(&fw);
+    if let Some(fw) = args.firmware {
+        interpreter.load_elf(&fw, DRAM_BASE);
     };
+
+    if let Some(kernel) = args.kernel {
+        // TODO Sacar direccion a un define o algo
+        interpreter.load_bin(&kernel, DRAM_BASE + 0x01000000);
+    }
 
     if let Some(exit_code) = interpreter.run() {
         println!("{:08X}", exit_code);
@@ -30,13 +35,15 @@ struct Args {
     headless: bool,
     #[arg(long, short)]
     firmware: Option<String>,
+    #[arg(long, short)]
+    kernel: Option<String>
 }
 
 fn main() {
     let args = Args::parse();
 
     if args.headless {
-        main_headless(args.firmware);
+        main_headless(args);
     } else {
         let _res = main_gui();
     }

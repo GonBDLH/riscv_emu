@@ -172,7 +172,7 @@ impl ControlAndStatus {
             Self::MISA => self.csrs[Self::MISA],
             Self::MEDELEG => self.csrs[Self::MEDELEG],
             Self::MIDELEG => self.csrs[Self::MIDELEG],
-            Self::MIE => self.csrs[Self::MIE] & Self::MIE_MASK,
+            Self::MIE => self.read_mie_unchecked(),
             Self::MTVEC => self.csrs[Self::MTVEC],
             Self::MCOUNTEREN => self.csrs[Self::MCOUNTEREN],
             Self::MSTATUSH => self.csrs[Self::MSTATUSH] & Self::MSTATUSH_MASK,
@@ -182,12 +182,7 @@ impl ControlAndStatus {
             Self::MEPC => self.csrs[Self::MEPC],
             Self::MCAUSE => self.csrs[Self::MCAUSE],
             Self::MTVAL => self.csrs[Self::MTVAL],
-            Self::MIP => {
-                // TODO No se si me convence, pero es lo mas simple
-                let msip = bus.read_byte(&PhysicalAddress((CLINT_BASE + MSIP_OFFSET) as u64)).unwrap();
-
-                (self.csrs[Self::MIP] | ((msip as u32 & 0b1) << 3)) & Self::MIP_MASK_READ
-            },
+            Self::MIP => self.read_mip_unchecked(bus),
             Self::MTINST => self.csrs[Self::MTINST],
             Self::MTVAL2 => self.csrs[Self::MTVAL2],
 
@@ -220,7 +215,7 @@ impl ControlAndStatus {
             Self::SEPC => self.csrs[Self::SEPC],
             Self::SCAUSE => self.csrs[Self::SCAUSE],
             Self::STVAL => self.csrs[Self::STVAL],
-            Self::SIP => self.csrs[Self::MIP] & Self::SIP_MASK_READ & self.csrs[Self::MIDELEG],
+            Self::SIP => self.read_sip_masked_unchecked(),
 
             Self::SATP => {
                 let mstatus = self.read_mstatus_unchecked();
@@ -279,20 +274,22 @@ impl ControlAndStatus {
         Ok(MStatus(csr))
     }
 
-    pub fn read_mip_unchecked(&self) -> u32 {
-        self.csrs[Self::MIP]
+    pub fn read_mip_unchecked(&self, bus: &Bus) -> u32 {
+        let msip = bus.read_byte(PhysicalAddress((CLINT_BASE + MSIP_OFFSET) as u64)).unwrap();
+
+        (self.csrs[Self::MIP] | ((msip as u32 & 0b1) << 3)) & Self::MIP_MASK_READ
     }
 
     pub fn read_mie_unchecked(&self) -> u32 {
-        self.csrs[Self::MIE]
+        self.csrs[Self::MIE] & Self::MIE_MASK
     }
 
     pub fn read_mideleg_unchecked(&self) -> u32 {
         self.csrs[Self::MIDELEG]
     }
 
-    pub fn read_sip_unchecked(&self) -> u32 {
-        self.csrs[Self::SIP]
+    pub fn read_sip_masked_unchecked(&self) -> u32 {
+        self.csrs[Self::MIP] & Self::SIP_MASK_READ & self.csrs[Self::MIDELEG]
     }
 
     pub fn read_sie_unchecked(&self) -> u32 {
@@ -476,7 +473,7 @@ impl ControlAndStatus {
     ) -> Result<PhysicalAddress, ExceptionType> {
         if self
             .pmp
-            .has_access(priv_level, access_type, &phys_address, access_length)
+            .has_access(priv_level, access_type, phys_address, access_length)
         {
             Ok(phys_address)
         } else {
@@ -529,7 +526,7 @@ impl ControlAndStatus {
     fn read_time(&self, bus: &Bus, priv_level: PrivilegeLevel) -> Result<u32, ExceptionType> {
         if priv_level == PrivilegeLevel::Supervisor {
             if self.csrs[Self::MCOUNTEREN] >> 1 & 1 != 0 {
-                bus.read_word(&PhysicalAddress(CLINT_BASE as u64 + MTIME_OFFSET as u64))
+                bus.read_word(PhysicalAddress(CLINT_BASE as u64 + MTIME_OFFSET as u64))
             } else {
                 Err(ExceptionType::IllegalInstruction)
             }
@@ -537,19 +534,19 @@ impl ControlAndStatus {
             if (self.csrs[Self::MCOUNTEREN] >> 1 & 1 != 0)
                 && (self.csrs[Self::SCOUNTEREN] >> 1 & 1 != 0)
             {
-                bus.read_word(&PhysicalAddress(CLINT_BASE as u64 + MTIME_OFFSET as u64))
+                bus.read_word(PhysicalAddress(CLINT_BASE as u64 + MTIME_OFFSET as u64))
             } else {
                 Err(ExceptionType::IllegalInstruction)
             }
         } else {
-            bus.read_word(&PhysicalAddress(CLINT_BASE as u64 + MTIME_OFFSET as u64))
+            bus.read_word(PhysicalAddress(CLINT_BASE as u64 + MTIME_OFFSET as u64))
         }
     }
 
     fn read_timeh(&self, bus: &Bus, priv_level: PrivilegeLevel) -> Result<u32, ExceptionType> {
         if priv_level == PrivilegeLevel::Supervisor {
             if self.csrs[Self::MCOUNTEREN] >> 1 & 1 != 0 {
-                bus.read_word(&PhysicalAddress(
+                bus.read_word(PhysicalAddress(
                     CLINT_BASE as u64 + MTIME_OFFSET as u64 + 4,
                 ))
             } else {
@@ -559,14 +556,14 @@ impl ControlAndStatus {
             if (self.csrs[Self::MCOUNTEREN] >> 1 & 1 != 0)
                 && (self.csrs[Self::SCOUNTEREN] >> 1 & 1 != 0)
             {
-                bus.read_word(&PhysicalAddress(
+                bus.read_word(PhysicalAddress(
                     CLINT_BASE as u64 + MTIME_OFFSET as u64 + 4,
                 ))
             } else {
                 Err(ExceptionType::IllegalInstruction)
             }
         } else {
-            bus.read_word(&PhysicalAddress(
+            bus.read_word(PhysicalAddress(
                 CLINT_BASE as u64 + MTIME_OFFSET as u64 + 4,
             ))
         }

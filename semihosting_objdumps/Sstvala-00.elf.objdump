@@ -57,7 +57,7 @@ SYMBOL TABLE:
 00000000 l    d  .debug_aranges	00000000 .debug_aranges
 00000000 l    d  .debug_str	00000000 .debug_str
 00000000 l    d  .debug_rnglists	00000000 .debug_rnglists
-00000000 l    df *ABS*	00000000 ccQ8gNeD.o
+00000000 l    df *ABS*	00000000 ccyLwuRU.o
 10000000 l       *ABS*	00000000 UART_BASE_ADDR
 10000000 l       *ABS*	00000000 UART_THR
 10000003 l       *ABS*	00000000 UART_LCR
@@ -856,7 +856,7 @@ Desensamblado de la sección .text.rvtest:
 
 # Testcase: lb access fault
   LA(x15, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000040:	10000793          	addi	x15,x0,256
+80000040:	700007b7          	lui	x15,0x70000
 80000044:	00000013          	addi	x0,x0,0
 80000048:	00000013          	addi	x0,x0,0
 8000004c:	00000013          	addi	x0,x0,0
@@ -871,7 +871,7 @@ Desensamblado de la sección .text.rvtest:
 80000068 <Sstvala_cg_cp_load_access_fault_lb_fault>:
 Sstvala_cg_cp_load_access_fault_lb_fault:
   lb x14, 0(x15)
-80000068:	00078703          	lb	x14,0(x15)
+80000068:	00078703          	lb	x14,0(x15) # 70000000 <UART_LSR+0x5ffffffb>
   # Check if x14 contains the expected result. x2 is the signature ptr, x5 is the link ptr, x4 is a temp reg.
   RVTEST_SIGUPD(x2, x5, x4, x14, Sstvala_cg_cp_load_access_fault_lb_fault, Sstvala_cg_cp_load_access_fault_lb_fault_str)
 8000006c:	00012203          	lw	x4,0(x2)
@@ -890,7 +890,7 @@ Sstvala_cg_cp_load_access_fault_lb_fault:
 
 # Testcase: lbu access fault
   LA(x15, RVMODEL_ACCESS_FAULT_ADDRESS)
-800000a0:	10000793          	addi	x15,x0,256
+800000a0:	700007b7          	lui	x15,0x70000
 800000a4:	00000013          	addi	x0,x0,0
 800000a8:	00000013          	addi	x0,x0,0
 800000ac:	00000013          	addi	x0,x0,0
@@ -905,7 +905,7 @@ Sstvala_cg_cp_load_access_fault_lb_fault:
 800000c8 <Sstvala_cg_cp_load_access_fault_lbu_fault>:
 Sstvala_cg_cp_load_access_fault_lbu_fault:
   lbu x14, 0(x15)
-800000c8:	0007c703          	lbu	x14,0(x15)
+800000c8:	0007c703          	lbu	x14,0(x15) # 70000000 <UART_LSR+0x5ffffffb>
   # Check if x14 contains the expected result. x2 is the signature ptr, x5 is the link ptr, x4 is a temp reg.
   RVTEST_SIGUPD(x2, x5, x4, x14, Sstvala_cg_cp_load_access_fault_lbu_fault, Sstvala_cg_cp_load_access_fault_lbu_fault_str)
 800000cc:	00012203          	lw	x4,0(x2)
@@ -924,7 +924,7 @@ Sstvala_cg_cp_load_access_fault_lbu_fault:
 
 # Testcase: lh access fault
   LA(x15, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000100:	10000793          	addi	x15,x0,256
+80000100:	700007b7          	lui	x15,0x70000
 80000104:	00000013          	addi	x0,x0,0
 80000108:	00000013          	addi	x0,x0,0
 8000010c:	00000013          	addi	x0,x0,0
@@ -939,7 +939,7 @@ Sstvala_cg_cp_load_access_fault_lbu_fault:
 80000128 <Sstvala_cg_cp_load_access_fault_lh_fault>:
 Sstvala_cg_cp_load_access_fault_lh_fault:
   lh x14, 0(x15)
-80000128:	00079703          	lh	x14,0(x15)
+80000128:	00079703          	lh	x14,0(x15) # 70000000 <UART_LSR+0x5ffffffb>
   # Check if x14 contains the expected result. x2 is the signature ptr, x5 is the link ptr, x4 is a temp reg.
   RVTEST_SIGUPD(x2, x5, x4, x14, Sstvala_cg_cp_load_access_fault_lh_fault, Sstvala_cg_cp_load_access_fault_lh_fault_str)
 8000012c:	00012203          	lw	x4,0(x2)
@@ -958,7 +958,7 @@ Sstvala_cg_cp_load_access_fault_lh_fault:
 
 # Testcase: lhu access fault
   LA(x15, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000160:	10000793          	addi	x15,x0,256
+80000160:	700007b7          	lui	x15,0x70000
 80000164:	00000013          	addi	x0,x0,0
 80000168:	00000013          	addi	x0,x0,0
 8000016c:	00000013          	addi	x0,x0,0
@@ -973,7 +973,7 @@ Sstvala_cg_cp_load_access_fault_lh_fault:
 80000188 <Sstvala_cg_cp_load_access_fault_lhu_fault>:
 Sstvala_cg_cp_load_access_fault_lhu_fault:
   lhu x14, 0(x15)
-80000188:	0007d703          	lhu	x14,0(x15)
+80000188:	0007d703          	lhu	x14,0(x15) # 70000000 <UART_LSR+0x5ffffffb>
   # Check if x14 contains the expected result. x2 is the signature ptr, x5 is the link ptr, x4 is a temp reg.
   RVTEST_SIGUPD(x2, x5, x4, x14, Sstvala_cg_cp_load_access_fault_lhu_fault, Sstvala_cg_cp_load_access_fault_lhu_fault_str)
 8000018c:	00012203          	lw	x4,0(x2)
@@ -992,7 +992,7 @@ Sstvala_cg_cp_load_access_fault_lhu_fault:
 
 # Testcase: lw access fault
   LA(x15, RVMODEL_ACCESS_FAULT_ADDRESS)
-800001c0:	10000793          	addi	x15,x0,256
+800001c0:	700007b7          	lui	x15,0x70000
 800001c4:	00000013          	addi	x0,x0,0
 800001c8:	00000013          	addi	x0,x0,0
 800001cc:	00000013          	addi	x0,x0,0
@@ -1007,7 +1007,7 @@ Sstvala_cg_cp_load_access_fault_lhu_fault:
 800001e8 <Sstvala_cg_cp_load_access_fault_lw_fault>:
 Sstvala_cg_cp_load_access_fault_lw_fault:
   lw x14, 0(x15)
-800001e8:	0007a703          	lw	x14,0(x15)
+800001e8:	0007a703          	lw	x14,0(x15) # 70000000 <UART_LSR+0x5ffffffb>
   # Check if x14 contains the expected result. x2 is the signature ptr, x5 is the link ptr, x4 is a temp reg.
   RVTEST_SIGUPD(x2, x5, x4, x14, Sstvala_cg_cp_load_access_fault_lw_fault, Sstvala_cg_cp_load_access_fault_lw_fault_str)
 800001ec:	00012203          	lw	x4,0(x2)
@@ -1022,18 +1022,18 @@ Sstvala_cg_cp_load_access_fault_lw_fault:
 
 # Testcase: sb access fault
   LI(x6, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000204:	10000313          	addi	x6,x0,256
+80000204:	70000337          	lui	x6,0x70000
   LI(x15, 0xAB)
 80000208:	0ab00793          	addi	x15,x0,171
 
 8000020c <Sstvala_cg_cp_store_access_fault_sb_fault>:
 Sstvala_cg_cp_store_access_fault_sb_fault:
   sb x15, 0(x6)
-8000020c:	00f30023          	sb	x15,0(x6)
+8000020c:	00f30023          	sb	x15,0(x6) # 70000000 <UART_LSR+0x5ffffffb>
 
 # Testcase: sh access fault
   LI(x6, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000210:	10000313          	addi	x6,x0,256
+80000210:	70000337          	lui	x6,0x70000
   LI(x15, 0xBEAD)
 80000214:	0000c7b7          	lui	x15,0xc
 80000218:	ead78793          	addi	x15,x15,-339 # bead <CSR_XSATP+0xbd2d>
@@ -1041,11 +1041,11 @@ Sstvala_cg_cp_store_access_fault_sb_fault:
 8000021c <Sstvala_cg_cp_store_access_fault_sh_fault>:
 Sstvala_cg_cp_store_access_fault_sh_fault:
   sh x15, 0(x6)
-8000021c:	00f31023          	sh	x15,0(x6)
+8000021c:	00f31023          	sh	x15,0(x6) # 70000000 <UART_LSR+0x5ffffffb>
 
 # Testcase: sw access fault
   LI(x6, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000220:	10000313          	addi	x6,x0,256
+80000220:	70000337          	lui	x6,0x70000
   LI(x15, 0xADDEDCAB)
 80000224:	addee7b7          	lui	x15,0xaddee
 80000228:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddaccab>
@@ -1053,7 +1053,7 @@ Sstvala_cg_cp_store_access_fault_sh_fault:
 8000022c <Sstvala_cg_cp_store_access_fault_sw_fault>:
 Sstvala_cg_cp_store_access_fault_sw_fault:
   sw x15, 0(x6)
-8000022c:	00f32023          	sw	x15,0(x6)
+8000022c:	00f32023          	sw	x15,0(x6) # 70000000 <UART_LSR+0x5ffffffb>
 80000230:	00000013          	addi	x0,x0,0
 80000234:	00000013          	addi	x0,x0,0
 80000238:	00000013          	addi	x0,x0,0
@@ -1064,7 +1064,7 @@ Sstvala_cg_cp_store_access_fault_sw_fault:
 //   Instruction Access Fault
 /////////////////////////////////
   LA(x15, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000240:	10000793          	addi	x15,x0,256
+80000240:	700007b7          	lui	x15,0x70000
 80000244:	00000013          	addi	x0,x0,0
 80000248:	00000013          	addi	x0,x0,0
 8000024c:	00000013          	addi	x0,x0,0
@@ -1076,7 +1076,7 @@ Sstvala_cg_cp_store_access_fault_sw_fault:
 80000260 <Sstvala_cg_cp_instr_access_fault_instr_access_fault>:
 Sstvala_cg_cp_instr_access_fault_instr_access_fault:
   jalr x1, 0(x15)
-80000260:	000780e7          	jalr	x1,0(x15)
+80000260:	000780e7          	jalr	x1,0(x15) # 70000000 <UART_LSR+0x5ffffffb>
 80000264:	00000013          	addi	x0,x0,0
 80000268:	00000013          	addi	x0,x0,0
 8000026c:	00000013          	addi	x0,x0,0
@@ -6370,9 +6370,9 @@ RVTEST_CODE_END
 80003e34:	04039c63          	bne	x7,x0,80003e8c <sv_Mepc>
 
 80003e38 <vmem_adj_Mepc>:
-80003e38:	10000393          	addi	x7,x0,256
+80003e38:	700003b7          	lui	x7,0x70000
 80003e3c:	04740863          	beq	x8,x7,80003e8c <sv_Mepc>
-80003e40:	00238393          	addi	x7,x7,2
+80003e40:	00238393          	addi	x7,x7,2 # 70000002 <UART_LSR+0x5ffffffd>
 80003e44:	04740463          	beq	x8,x7,80003e8c <sv_Mepc>
 80003e48:	04040263          	beq	x8,x0,80003e8c <sv_Mepc>
 80003e4c:	2084a383          	lw	x7,520(x9)
@@ -7019,9 +7019,9 @@ RVTEST_CODE_END
 80004784:	06039063          	bne	x7,x0,800047e4 <sv_Sepc>
 
 80004788 <vmem_adj_Sepc>:
-80004788:	10000393          	addi	x7,x0,256
+80004788:	700003b7          	lui	x7,0x70000
 8000478c:	04740c63          	beq	x8,x7,800047e4 <sv_Sepc>
-80004790:	00238393          	addi	x7,x7,2
+80004790:	00238393          	addi	x7,x7,2 # 70000002 <UART_LSR+0x5ffffffd>
 80004794:	04740863          	beq	x8,x7,800047e4 <sv_Sepc>
 80004798:	04040663          	beq	x8,x0,800047e4 <sv_Sepc>
 8000479c:	2084a383          	lw	x7,520(x9)

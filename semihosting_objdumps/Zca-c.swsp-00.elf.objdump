@@ -57,7 +57,7 @@ SYMBOL TABLE:
 00000000 l    d  .debug_aranges	00000000 .debug_aranges
 00000000 l    d  .debug_str	00000000 .debug_str
 00000000 l    d  .debug_rnglists	00000000 .debug_rnglists
-00000000 l    df *ABS*	00000000 ccsNGS82.o
+00000000 l    df *ABS*	00000000 ccV9GDKc.o
 10000000 l       *ABS*	00000000 UART_BASE_ADDR
 10000000 l       *ABS*	00000000 UART_THR
 10000003 l       *ABS*	00000000 UART_LCR
@@ -4664,9 +4664,9 @@ RVTEST_CODE_END
 800022f4:	04039c63          	bne	x7,x0,8000234c <sv_Mepc>
 
 800022f8 <vmem_adj_Mepc>:
-800022f8:	10000393          	addi	x7,x0,256
+800022f8:	700003b7          	lui	x7,0x70000
 800022fc:	04740863          	beq	x8,x7,8000234c <sv_Mepc>
-80002300:	00238393          	addi	x7,x7,2
+80002300:	00238393          	addi	x7,x7,2 # 70000002 <UART_LSR+0x5ffffffd>
 80002304:	04740463          	beq	x8,x7,8000234c <sv_Mepc>
 80002308:	04040263          	beq	x8,x0,8000234c <sv_Mepc>
 8000230c:	2084a383          	lw	x7,520(x9)
@@ -5313,9 +5313,9 @@ RVTEST_CODE_END
 80002c44:	06039063          	bne	x7,x0,80002ca4 <sv_Sepc>
 
 80002c48 <vmem_adj_Sepc>:
-80002c48:	10000393          	addi	x7,x0,256
+80002c48:	700003b7          	lui	x7,0x70000
 80002c4c:	04740c63          	beq	x8,x7,80002ca4 <sv_Sepc>
-80002c50:	00238393          	addi	x7,x7,2
+80002c50:	00238393          	addi	x7,x7,2 # 70000002 <UART_LSR+0x5ffffffd>
 80002c54:	04740863          	beq	x8,x7,80002ca4 <sv_Sepc>
 80002c58:	04040663          	beq	x8,x0,80002ca4 <sv_Sepc>
 80002c5c:	2084a383          	lw	x7,520(x9)

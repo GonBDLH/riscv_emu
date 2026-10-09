@@ -740,9 +740,9 @@ impl RVCore {
         (misa & (1 << 2)) > 0
     }
 
-    pub fn check_int_to_m(&self, int: InterruptType) -> bool {
+    pub fn check_int_to_m(&self, int: InterruptType, bus: &Bus) -> bool {
         let mstatus = self.control_and_status.read_mstatus_unchecked();
-        let mip = self.control_and_status.read_mip_unchecked();
+        let mip = self.control_and_status.read_mip_unchecked(bus);
         let mie = self.control_and_status.read_mie_unchecked();
         let mideleg = self.control_and_status.read_mideleg_unchecked();
 
@@ -754,7 +754,7 @@ impl RVCore {
 
     pub fn check_int_to_s(&self, int: InterruptType) -> bool {
         let sstatus = self.control_and_status.read_sstatus_unchecked();
-        let sip = self.control_and_status.read_sip_unchecked();
+        let sip = self.control_and_status.read_sip_masked_unchecked();
         let sie = self.control_and_status.read_sie_unchecked();
 
         ((self.privilege_level == PrivilegeLevel::Supervisor && sstatus.get_sie())
@@ -1456,6 +1456,8 @@ impl Trap for Exception {
     fn handle(&self, core: &mut RVCore) {
         let prev_priv_level = core.privilege_level;
         let cause = self.get_cause();
+
+        println!("EXC {cause}");
 
         let delegated = {
             let medelegl = core.control_and_status.read_medeleg_unchecked();

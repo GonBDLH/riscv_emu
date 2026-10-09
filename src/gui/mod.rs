@@ -8,7 +8,7 @@ use std::{
 
 use eframe::egui::{self, Button};
 use egui_extras::{Column, TableBuilder};
-use emulator::interpreter::Interpreter;
+use emulator::interpreter::{Interpreter, bus::DRAM_BASE};
 
 enum Command {
     Reset,
@@ -85,7 +85,7 @@ impl GuiState {
                     Ok(Command::LoadElf(path)) => {
                         let mut interpreter = interpreter_clone.write().unwrap();
 
-                        interpreter.load_elf(&path);
+                        interpreter.load_elf(&path, DRAM_BASE);
                     }
                     Err(TryRecvError::Empty) => {}
                     _ => panic!("MPSC Disconected"),

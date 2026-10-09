@@ -17,7 +17,7 @@ use crate::interpreter::{
     }, virtual_memory::sv32::{AccessType, PhysicalAddress, translate_address},
 };
 
-mod bus;
+pub mod bus;
 pub mod csr;
 mod extensions;
 mod pmp;
@@ -44,7 +44,7 @@ impl Interpreter {
             core: RVCore::default(),
         };
 
-        interpreter.load_elf(path);
+        interpreter.load_elf(path, DRAM_BASE);
 
         interpreter
     }
@@ -71,7 +71,7 @@ impl Interpreter {
             if let Record::Data { offset, value } = record {
                 value.iter().enumerate().for_each(|(add, val)| {
                     let _ = self.bus.write_byte(
-                        &PhysicalAddress(0x80000000u64 + offset as u64 + add as u64),
+                        PhysicalAddress(0x80000000u64 + offset as u64 + add as u64),
                         *val,
                     );
                 });
@@ -79,20 +79,21 @@ impl Interpreter {
         }
     }
 
-    pub fn load_bin(&mut self, path: &str) {
+    pub fn load_bin(&mut self, path: &str, load_base: usize) {
         let mut file = File::open(path).unwrap();
         let mut buf: Vec<u8> = Vec::new();
 
         file.read_to_end(&mut buf).unwrap();
 
-        for (i, val) in buf.iter().enumerate() {
-            let _ = self
-                .bus
-                .write_byte(&PhysicalAddress(0x80000000u64 + i as u64), *val);
-        }
+        // for (i, val) in buf.iter().enumerate() {
+        //     let _ = self
+        //         .bus
+        //         .write_byte(PhysicalAddress(load_base as u64 + i as u64), *val);
+        // }
+        self.bus.load_data(&buf, load_base);
     }
 
-    pub fn load_elf(&mut self, path: &str) {
+    pub fn load_elf(&mut self, path: &str, load_base: usize) {
         let path_buf = std::path::PathBuf::from(path);
         let file_data = std::fs::read(path_buf).expect("Could not read file.");
         let slice = file_data.as_slice();
@@ -119,12 +120,12 @@ impl Interpreter {
                 let address = phdr.p_vaddr as usize;
 
                 let load_bias = if e_type == ET_DYN {
-                    DRAM_BASE - min_dyn_addr
+                    load_base - min_dyn_addr
                 } else {
                     0
                 };
 
-                self.bus.load_section(data, address + load_bias);
+                self.bus.load_data(data, address + load_bias);
 
                 if phdr.p_filesz != phdr.p_memsz {
                     self.bus.fill_zeros(
@@ -147,18 +148,18 @@ impl Interpreter {
         // TODO Hay que cambiar esto para cuando se haga un fecth de 16 bits (C instr)
         let phys_pc = translate_address(&mut self.core, &mut self.bus, pc, AccessType::Execute, 4)?;
 
-        if phys_pc.0 == 0x80018830 {
-            println!("semihosting init");
+        if phys_pc.0 == 0x0 {
+            println!("TEST");
         }
 
-        if !self.bus.check_pma(&phys_pc, AccessType::Execute) {
+        if !self.bus.check_pma(phys_pc, AccessType::Execute) {
             return Err(Exception::new(
                 AccessType::Execute.get_access_fault_exception(),
                 pc,
             ));
         }
 
-        let val = self.bus.read_word(&phys_pc).with_err_val(pc)?;
+        let val = self.bus.read_word(phys_pc).with_err_val(pc)?;
 
         Ok(val)
     }
@@ -185,6 +186,10 @@ impl Interpreter {
             return Ok(());
         }
 
+        if self.core.get_pc() == 0x80038f34 {
+            println!("!")
+        }
+
         let fetched = self.fetch()?;
         #[cfg(feature = "semihosting")]
         {
@@ -194,12 +199,12 @@ impl Interpreter {
                 let address = PhysicalAddress(self.core.get_pc() as u64 + 4);
                 let break_instr = self
                     .bus
-                    .read_word(&address)
+                    .read_word(address)
                     .with_err_val(address.0 as u32)?;
                 let address = PhysicalAddress(self.core.get_pc() as u64 + 8);
                 let exit = self
                     .bus
-                    .read_word(&address)
+                    .read_word(address)
                     .with_err_val(address.0 as u32)?;
 
                 if break_instr == 0x00100073 && exit == 0x40705013 {
@@ -267,7 +272,7 @@ impl Interpreter {
         ];
 
         for int_type in candidates {
-            if self.core.check_int_to_m(int_type) {
+            if self.core.check_int_to_m(int_type, &self.bus) {
                 return Some(Interrupt::new(int_type, false));
             } else if self.core.check_int_to_s(int_type) {
                 return Some(Interrupt::new(int_type, true));

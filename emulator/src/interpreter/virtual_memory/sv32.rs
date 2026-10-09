@@ -50,7 +50,7 @@ bitfield! {
 }
 
 bitfield! {
-    #[derive(Debug)]
+    #[derive(Debug, Clone, Copy)]
     pub struct PhysicalAddress(u64);
     pub get_ppn1, set_ppn1: 33, 22;
     pub get_ppn0, set_ppn0: 21, 12;
@@ -232,7 +232,7 @@ fn translate(
                 4,
             )
             .with_err_val(virt_address)?;
-        if !bus.check_pma(&pte_phys_address, access_type) {
+        if !bus.check_pma(pte_phys_address, access_type) {
             return Err(Exception::new(
                 access_type.get_page_fault_exception(),
                 virt_address,
@@ -240,7 +240,7 @@ fn translate(
         }
 
         let pte = PageTableEntry(
-            bus.read_aligned_word(&pte_phys_address)
+            bus.read_aligned_word(pte_phys_address)
                 .with_err_val(virt_address)?,
         );
 
@@ -281,7 +281,7 @@ fn translate(
                         4,
                     )
                     .with_err_val(virt_address)?;
-                if !bus.check_pma(&new_pte_phys_address, AccessType::StoreAmo) {
+                if !bus.check_pma(new_pte_phys_address, AccessType::StoreAmo) {
                     return Err(Exception::new(
                         access_type.get_access_fault_exception(),
                         virt_address,
@@ -289,7 +289,7 @@ fn translate(
                 }
 
                 let mut new_pte = PageTableEntry(
-                    bus.read_aligned_word(&new_pte_phys_address)
+                    bus.read_aligned_word(new_pte_phys_address)
                         .with_err_val(virt_address)?,
                 );
 
@@ -299,7 +299,7 @@ fn translate(
                         new_pte.set_d(true);
                     }
 
-                    bus.write_aligned_word(&PhysicalAddress(pte_addr as u64), new_pte.0)
+                    bus.write_aligned_word(PhysicalAddress(pte_addr as u64), new_pte.0)
                         .unwrap();
                 } else {
                     continue;

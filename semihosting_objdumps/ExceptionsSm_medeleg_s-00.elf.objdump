@@ -57,7 +57,7 @@ SYMBOL TABLE:
 00000000 l    d  .debug_aranges	00000000 .debug_aranges
 00000000 l    d  .debug_str	00000000 .debug_str
 00000000 l    d  .debug_rnglists	00000000 .debug_rnglists
-00000000 l    df *ABS*	00000000 cclnCLKa.o
+00000000 l    df *ABS*	00000000 ccHHLG3h.o
 10000000 l       *ABS*	00000000 UART_BASE_ADDR
 10000000 l       *ABS*	00000000 UART_THR
 10000003 l       *ABS*	00000000 UART_LCR
@@ -988,7 +988,7 @@ Desensamblado de la sección .text.rvtest:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000060:	10000493          	addi	x9,x0,256
+80000060:	700004b7          	lui	x9,0x70000
 80000064:	00000013          	addi	x0,x0,0
 80000068:	00000013          	addi	x0,x0,0
 8000006c:	00000013          	addi	x0,x0,0
@@ -997,7 +997,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0000_mode_s:
 80000078:	00000013          	addi	x0,x0,0
 8000007c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80000080:	000480e7          	jalr	x1,0(x9)
+80000080:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80000084:	002480e7          	jalr	x1,2(x9)
 
@@ -1012,7 +1012,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800000a0:	10000493          	addi	x9,x0,256
+800000a0:	700004b7          	lui	x9,0x70000
 800000a4:	00000013          	addi	x0,x0,0
 800000a8:	00000013          	addi	x0,x0,0
 800000ac:	00000013          	addi	x0,x0,0
@@ -1021,7 +1021,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0000_mode_s:
 800000b8:	00000013          	addi	x0,x0,0
 800000bc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-800000c0:	000480e7          	jalr	x1,0(x9)
+800000c0:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 800000c4 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x0000_mode_s>:
 800000c4:	00000000          	.word	0x00000000
@@ -1169,7 +1169,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x0000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800001a0:	10000493          	addi	x9,x0,256
+800001a0:	700004b7          	lui	x9,0x70000
 800001a4:	00000013          	addi	x0,x0,0
 800001a8:	00000013          	addi	x0,x0,0
 800001ac:	00000013          	addi	x0,x0,0
@@ -1178,7 +1178,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0000_mode_s:
 800001b8:	00000013          	addi	x0,x0,0
 800001bc:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-800001c0:	0004a303          	lw	x6,0(x9)
+800001c0:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 800001c4:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -1284,7 +1284,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x0000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000260:	10000493          	addi	x9,x0,256
+80000260:	700004b7          	lui	x9,0x70000
 80000264:	00000013          	addi	x0,x0,0
 80000268:	00000013          	addi	x0,x0,0
 8000026c:	00000013          	addi	x0,x0,0
@@ -1296,7 +1296,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0000_mode_s:
 80000280:	addee7b7          	lui	x15,0xaddee
 80000284:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80000288:	00f4a023          	sw	x15,0(x9)
+80000288:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 8000028c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -1342,7 +1342,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x0000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0001_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800002e0:	10000493          	addi	x9,x0,256
+800002e0:	700004b7          	lui	x9,0x70000
 800002e4:	00000013          	addi	x0,x0,0
 800002e8:	00000013          	addi	x0,x0,0
 800002ec:	00000013          	addi	x0,x0,0
@@ -1351,7 +1351,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0001_mode_s:
 800002f8:	00000013          	addi	x0,x0,0
 800002fc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80000300:	000480e7          	jalr	x1,0(x9)
+80000300:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80000304:	002480e7          	jalr	x1,2(x9)
 
@@ -1366,7 +1366,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0001_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0001_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000320:	10000493          	addi	x9,x0,256
+80000320:	700004b7          	lui	x9,0x70000
 80000324:	00000013          	addi	x0,x0,0
 80000328:	00000013          	addi	x0,x0,0
 8000032c:	00000013          	addi	x0,x0,0
@@ -1375,7 +1375,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0001_mode_s:
 80000338:	00000013          	addi	x0,x0,0
 8000033c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-80000340:	000480e7          	jalr	x1,0(x9)
+80000340:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 80000344 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x0001_mode_s>:
 80000344:	00000000          	.word	0x00000000
@@ -1523,7 +1523,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x0001_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0001_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000420:	10000493          	addi	x9,x0,256
+80000420:	700004b7          	lui	x9,0x70000
 80000424:	00000013          	addi	x0,x0,0
 80000428:	00000013          	addi	x0,x0,0
 8000042c:	00000013          	addi	x0,x0,0
@@ -1532,7 +1532,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0001_mode_s:
 80000438:	00000013          	addi	x0,x0,0
 8000043c:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-80000440:	0004a303          	lw	x6,0(x9)
+80000440:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 80000444:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -1638,7 +1638,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x0001_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0001_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800004e0:	10000493          	addi	x9,x0,256
+800004e0:	700004b7          	lui	x9,0x70000
 800004e4:	00000013          	addi	x0,x0,0
 800004e8:	00000013          	addi	x0,x0,0
 800004ec:	00000013          	addi	x0,x0,0
@@ -1650,7 +1650,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0001_mode_s:
 80000500:	addee7b7          	lui	x15,0xaddee
 80000504:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80000508:	00f4a023          	sw	x15,0(x9)
+80000508:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 8000050c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -1696,7 +1696,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x0001_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0002_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000560:	10000493          	addi	x9,x0,256
+80000560:	700004b7          	lui	x9,0x70000
 80000564:	00000013          	addi	x0,x0,0
 80000568:	00000013          	addi	x0,x0,0
 8000056c:	00000013          	addi	x0,x0,0
@@ -1705,7 +1705,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0002_mode_s:
 80000578:	00000013          	addi	x0,x0,0
 8000057c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80000580:	000480e7          	jalr	x1,0(x9)
+80000580:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80000584:	002480e7          	jalr	x1,2(x9)
 
@@ -1720,7 +1720,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0002_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0002_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800005a0:	10000493          	addi	x9,x0,256
+800005a0:	700004b7          	lui	x9,0x70000
 800005a4:	00000013          	addi	x0,x0,0
 800005a8:	00000013          	addi	x0,x0,0
 800005ac:	00000013          	addi	x0,x0,0
@@ -1729,7 +1729,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0002_mode_s:
 800005b8:	00000013          	addi	x0,x0,0
 800005bc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-800005c0:	000480e7          	jalr	x1,0(x9)
+800005c0:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 800005c4 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x0002_mode_s>:
 800005c4:	00000000          	.word	0x00000000
@@ -1877,7 +1877,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x0002_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0002_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800006a0:	10000493          	addi	x9,x0,256
+800006a0:	700004b7          	lui	x9,0x70000
 800006a4:	00000013          	addi	x0,x0,0
 800006a8:	00000013          	addi	x0,x0,0
 800006ac:	00000013          	addi	x0,x0,0
@@ -1886,7 +1886,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0002_mode_s:
 800006b8:	00000013          	addi	x0,x0,0
 800006bc:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-800006c0:	0004a303          	lw	x6,0(x9)
+800006c0:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 800006c4:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -1992,7 +1992,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x0002_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0002_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000760:	10000493          	addi	x9,x0,256
+80000760:	700004b7          	lui	x9,0x70000
 80000764:	00000013          	addi	x0,x0,0
 80000768:	00000013          	addi	x0,x0,0
 8000076c:	00000013          	addi	x0,x0,0
@@ -2004,7 +2004,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0002_mode_s:
 80000780:	addee7b7          	lui	x15,0xaddee
 80000784:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80000788:	00f4a023          	sw	x15,0(x9)
+80000788:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 8000078c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -2050,7 +2050,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x0002_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0004_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800007e0:	10000493          	addi	x9,x0,256
+800007e0:	700004b7          	lui	x9,0x70000
 800007e4:	00000013          	addi	x0,x0,0
 800007e8:	00000013          	addi	x0,x0,0
 800007ec:	00000013          	addi	x0,x0,0
@@ -2059,7 +2059,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0004_mode_s:
 800007f8:	00000013          	addi	x0,x0,0
 800007fc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80000800:	000480e7          	jalr	x1,0(x9)
+80000800:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80000804:	002480e7          	jalr	x1,2(x9)
 
@@ -2074,7 +2074,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0004_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0004_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000820:	10000493          	addi	x9,x0,256
+80000820:	700004b7          	lui	x9,0x70000
 80000824:	00000013          	addi	x0,x0,0
 80000828:	00000013          	addi	x0,x0,0
 8000082c:	00000013          	addi	x0,x0,0
@@ -2083,7 +2083,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0004_mode_s:
 80000838:	00000013          	addi	x0,x0,0
 8000083c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-80000840:	000480e7          	jalr	x1,0(x9)
+80000840:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 80000844 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x0004_mode_s>:
 80000844:	00000000          	.word	0x00000000
@@ -2231,7 +2231,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x0004_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0004_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000920:	10000493          	addi	x9,x0,256
+80000920:	700004b7          	lui	x9,0x70000
 80000924:	00000013          	addi	x0,x0,0
 80000928:	00000013          	addi	x0,x0,0
 8000092c:	00000013          	addi	x0,x0,0
@@ -2240,7 +2240,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0004_mode_s:
 80000938:	00000013          	addi	x0,x0,0
 8000093c:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-80000940:	0004a303          	lw	x6,0(x9)
+80000940:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 80000944:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -2346,7 +2346,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x0004_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0004_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800009e0:	10000493          	addi	x9,x0,256
+800009e0:	700004b7          	lui	x9,0x70000
 800009e4:	00000013          	addi	x0,x0,0
 800009e8:	00000013          	addi	x0,x0,0
 800009ec:	00000013          	addi	x0,x0,0
@@ -2358,7 +2358,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0004_mode_s:
 80000a00:	addee7b7          	lui	x15,0xaddee
 80000a04:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80000a08:	00f4a023          	sw	x15,0(x9)
+80000a08:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 80000a0c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -2404,7 +2404,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x0004_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0008_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000a60:	10000493          	addi	x9,x0,256
+80000a60:	700004b7          	lui	x9,0x70000
 80000a64:	00000013          	addi	x0,x0,0
 80000a68:	00000013          	addi	x0,x0,0
 80000a6c:	00000013          	addi	x0,x0,0
@@ -2413,7 +2413,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0008_mode_s:
 80000a78:	00000013          	addi	x0,x0,0
 80000a7c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80000a80:	000480e7          	jalr	x1,0(x9)
+80000a80:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80000a84:	002480e7          	jalr	x1,2(x9)
 
@@ -2428,7 +2428,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0008_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0008_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000aa0:	10000493          	addi	x9,x0,256
+80000aa0:	700004b7          	lui	x9,0x70000
 80000aa4:	00000013          	addi	x0,x0,0
 80000aa8:	00000013          	addi	x0,x0,0
 80000aac:	00000013          	addi	x0,x0,0
@@ -2437,7 +2437,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0008_mode_s:
 80000ab8:	00000013          	addi	x0,x0,0
 80000abc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-80000ac0:	000480e7          	jalr	x1,0(x9)
+80000ac0:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 80000ac4 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x0008_mode_s>:
 80000ac4:	00000000          	.word	0x00000000
@@ -2585,7 +2585,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x0008_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0008_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000ba0:	10000493          	addi	x9,x0,256
+80000ba0:	700004b7          	lui	x9,0x70000
 80000ba4:	00000013          	addi	x0,x0,0
 80000ba8:	00000013          	addi	x0,x0,0
 80000bac:	00000013          	addi	x0,x0,0
@@ -2594,7 +2594,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0008_mode_s:
 80000bb8:	00000013          	addi	x0,x0,0
 80000bbc:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-80000bc0:	0004a303          	lw	x6,0(x9)
+80000bc0:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 80000bc4:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -2700,7 +2700,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x0008_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0008_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000c60:	10000493          	addi	x9,x0,256
+80000c60:	700004b7          	lui	x9,0x70000
 80000c64:	00000013          	addi	x0,x0,0
 80000c68:	00000013          	addi	x0,x0,0
 80000c6c:	00000013          	addi	x0,x0,0
@@ -2712,7 +2712,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0008_mode_s:
 80000c80:	addee7b7          	lui	x15,0xaddee
 80000c84:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80000c88:	00f4a023          	sw	x15,0(x9)
+80000c88:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 80000c8c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -2758,7 +2758,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x0008_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0010_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000ce0:	10000493          	addi	x9,x0,256
+80000ce0:	700004b7          	lui	x9,0x70000
 80000ce4:	00000013          	addi	x0,x0,0
 80000ce8:	00000013          	addi	x0,x0,0
 80000cec:	00000013          	addi	x0,x0,0
@@ -2767,7 +2767,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0010_mode_s:
 80000cf8:	00000013          	addi	x0,x0,0
 80000cfc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80000d00:	000480e7          	jalr	x1,0(x9)
+80000d00:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80000d04:	002480e7          	jalr	x1,2(x9)
 
@@ -2782,7 +2782,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0010_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0010_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000d20:	10000493          	addi	x9,x0,256
+80000d20:	700004b7          	lui	x9,0x70000
 80000d24:	00000013          	addi	x0,x0,0
 80000d28:	00000013          	addi	x0,x0,0
 80000d2c:	00000013          	addi	x0,x0,0
@@ -2791,7 +2791,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0010_mode_s:
 80000d38:	00000013          	addi	x0,x0,0
 80000d3c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-80000d40:	000480e7          	jalr	x1,0(x9)
+80000d40:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 80000d44 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x0010_mode_s>:
 80000d44:	00000000          	.word	0x00000000
@@ -2939,7 +2939,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x0010_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0010_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000e20:	10000493          	addi	x9,x0,256
+80000e20:	700004b7          	lui	x9,0x70000
 80000e24:	00000013          	addi	x0,x0,0
 80000e28:	00000013          	addi	x0,x0,0
 80000e2c:	00000013          	addi	x0,x0,0
@@ -2948,7 +2948,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0010_mode_s:
 80000e38:	00000013          	addi	x0,x0,0
 80000e3c:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-80000e40:	0004a303          	lw	x6,0(x9)
+80000e40:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 80000e44:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -3054,7 +3054,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x0010_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0010_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000ee0:	10000493          	addi	x9,x0,256
+80000ee0:	700004b7          	lui	x9,0x70000
 80000ee4:	00000013          	addi	x0,x0,0
 80000ee8:	00000013          	addi	x0,x0,0
 80000eec:	00000013          	addi	x0,x0,0
@@ -3066,7 +3066,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0010_mode_s:
 80000f00:	addee7b7          	lui	x15,0xaddee
 80000f04:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80000f08:	00f4a023          	sw	x15,0(x9)
+80000f08:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 80000f0c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -3112,7 +3112,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x0010_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0020_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000f60:	10000493          	addi	x9,x0,256
+80000f60:	700004b7          	lui	x9,0x70000
 80000f64:	00000013          	addi	x0,x0,0
 80000f68:	00000013          	addi	x0,x0,0
 80000f6c:	00000013          	addi	x0,x0,0
@@ -3121,7 +3121,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0020_mode_s:
 80000f78:	00000013          	addi	x0,x0,0
 80000f7c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80000f80:	000480e7          	jalr	x1,0(x9)
+80000f80:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80000f84:	002480e7          	jalr	x1,2(x9)
 
@@ -3136,7 +3136,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0020_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0020_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80000fa0:	10000493          	addi	x9,x0,256
+80000fa0:	700004b7          	lui	x9,0x70000
 80000fa4:	00000013          	addi	x0,x0,0
 80000fa8:	00000013          	addi	x0,x0,0
 80000fac:	00000013          	addi	x0,x0,0
@@ -3145,7 +3145,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0020_mode_s:
 80000fb8:	00000013          	addi	x0,x0,0
 80000fbc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-80000fc0:	000480e7          	jalr	x1,0(x9)
+80000fc0:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 80000fc4 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x0020_mode_s>:
 80000fc4:	00000000          	.word	0x00000000
@@ -3293,7 +3293,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x0020_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0020_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800010a0:	10000493          	addi	x9,x0,256
+800010a0:	700004b7          	lui	x9,0x70000
 800010a4:	00000013          	addi	x0,x0,0
 800010a8:	00000013          	addi	x0,x0,0
 800010ac:	00000013          	addi	x0,x0,0
@@ -3302,7 +3302,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0020_mode_s:
 800010b8:	00000013          	addi	x0,x0,0
 800010bc:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-800010c0:	0004a303          	lw	x6,0(x9)
+800010c0:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 800010c4:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -3408,7 +3408,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x0020_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0020_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001160:	10000493          	addi	x9,x0,256
+80001160:	700004b7          	lui	x9,0x70000
 80001164:	00000013          	addi	x0,x0,0
 80001168:	00000013          	addi	x0,x0,0
 8000116c:	00000013          	addi	x0,x0,0
@@ -3420,7 +3420,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0020_mode_s:
 80001180:	addee7b7          	lui	x15,0xaddee
 80001184:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80001188:	00f4a023          	sw	x15,0(x9)
+80001188:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 8000118c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -3466,7 +3466,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x0020_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0040_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800011e0:	10000493          	addi	x9,x0,256
+800011e0:	700004b7          	lui	x9,0x70000
 800011e4:	00000013          	addi	x0,x0,0
 800011e8:	00000013          	addi	x0,x0,0
 800011ec:	00000013          	addi	x0,x0,0
@@ -3475,7 +3475,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0040_mode_s:
 800011f8:	00000013          	addi	x0,x0,0
 800011fc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80001200:	000480e7          	jalr	x1,0(x9)
+80001200:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80001204:	002480e7          	jalr	x1,2(x9)
 
@@ -3490,7 +3490,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0040_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0040_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001220:	10000493          	addi	x9,x0,256
+80001220:	700004b7          	lui	x9,0x70000
 80001224:	00000013          	addi	x0,x0,0
 80001228:	00000013          	addi	x0,x0,0
 8000122c:	00000013          	addi	x0,x0,0
@@ -3499,7 +3499,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0040_mode_s:
 80001238:	00000013          	addi	x0,x0,0
 8000123c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-80001240:	000480e7          	jalr	x1,0(x9)
+80001240:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 80001244 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x0040_mode_s>:
 80001244:	00000000          	.word	0x00000000
@@ -3647,7 +3647,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x0040_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0040_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001320:	10000493          	addi	x9,x0,256
+80001320:	700004b7          	lui	x9,0x70000
 80001324:	00000013          	addi	x0,x0,0
 80001328:	00000013          	addi	x0,x0,0
 8000132c:	00000013          	addi	x0,x0,0
@@ -3656,7 +3656,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0040_mode_s:
 80001338:	00000013          	addi	x0,x0,0
 8000133c:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-80001340:	0004a303          	lw	x6,0(x9)
+80001340:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 80001344:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -3762,7 +3762,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x0040_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0040_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800013e0:	10000493          	addi	x9,x0,256
+800013e0:	700004b7          	lui	x9,0x70000
 800013e4:	00000013          	addi	x0,x0,0
 800013e8:	00000013          	addi	x0,x0,0
 800013ec:	00000013          	addi	x0,x0,0
@@ -3774,7 +3774,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0040_mode_s:
 80001400:	addee7b7          	lui	x15,0xaddee
 80001404:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80001408:	00f4a023          	sw	x15,0(x9)
+80001408:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 8000140c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -3820,7 +3820,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x0040_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0080_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001460:	10000493          	addi	x9,x0,256
+80001460:	700004b7          	lui	x9,0x70000
 80001464:	00000013          	addi	x0,x0,0
 80001468:	00000013          	addi	x0,x0,0
 8000146c:	00000013          	addi	x0,x0,0
@@ -3829,7 +3829,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0080_mode_s:
 80001478:	00000013          	addi	x0,x0,0
 8000147c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80001480:	000480e7          	jalr	x1,0(x9)
+80001480:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80001484:	002480e7          	jalr	x1,2(x9)
 
@@ -3844,7 +3844,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0080_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0080_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800014a0:	10000493          	addi	x9,x0,256
+800014a0:	700004b7          	lui	x9,0x70000
 800014a4:	00000013          	addi	x0,x0,0
 800014a8:	00000013          	addi	x0,x0,0
 800014ac:	00000013          	addi	x0,x0,0
@@ -3853,7 +3853,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0080_mode_s:
 800014b8:	00000013          	addi	x0,x0,0
 800014bc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-800014c0:	000480e7          	jalr	x1,0(x9)
+800014c0:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 800014c4 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x0080_mode_s>:
 800014c4:	00000000          	.word	0x00000000
@@ -4001,7 +4001,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x0080_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0080_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800015a0:	10000493          	addi	x9,x0,256
+800015a0:	700004b7          	lui	x9,0x70000
 800015a4:	00000013          	addi	x0,x0,0
 800015a8:	00000013          	addi	x0,x0,0
 800015ac:	00000013          	addi	x0,x0,0
@@ -4010,7 +4010,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0080_mode_s:
 800015b8:	00000013          	addi	x0,x0,0
 800015bc:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-800015c0:	0004a303          	lw	x6,0(x9)
+800015c0:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 800015c4:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -4116,7 +4116,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x0080_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0080_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001660:	10000493          	addi	x9,x0,256
+80001660:	700004b7          	lui	x9,0x70000
 80001664:	00000013          	addi	x0,x0,0
 80001668:	00000013          	addi	x0,x0,0
 8000166c:	00000013          	addi	x0,x0,0
@@ -4128,7 +4128,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0080_mode_s:
 80001680:	addee7b7          	lui	x15,0xaddee
 80001684:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80001688:	00f4a023          	sw	x15,0(x9)
+80001688:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 8000168c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -4174,7 +4174,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x0080_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0100_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800016e0:	10000493          	addi	x9,x0,256
+800016e0:	700004b7          	lui	x9,0x70000
 800016e4:	00000013          	addi	x0,x0,0
 800016e8:	00000013          	addi	x0,x0,0
 800016ec:	00000013          	addi	x0,x0,0
@@ -4183,7 +4183,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0100_mode_s:
 800016f8:	00000013          	addi	x0,x0,0
 800016fc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80001700:	000480e7          	jalr	x1,0(x9)
+80001700:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80001704:	002480e7          	jalr	x1,2(x9)
 
@@ -4198,7 +4198,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0100_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0100_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001720:	10000493          	addi	x9,x0,256
+80001720:	700004b7          	lui	x9,0x70000
 80001724:	00000013          	addi	x0,x0,0
 80001728:	00000013          	addi	x0,x0,0
 8000172c:	00000013          	addi	x0,x0,0
@@ -4207,7 +4207,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0100_mode_s:
 80001738:	00000013          	addi	x0,x0,0
 8000173c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-80001740:	000480e7          	jalr	x1,0(x9)
+80001740:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 80001744 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x0100_mode_s>:
 80001744:	00000000          	.word	0x00000000
@@ -4355,7 +4355,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x0100_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0100_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001820:	10000493          	addi	x9,x0,256
+80001820:	700004b7          	lui	x9,0x70000
 80001824:	00000013          	addi	x0,x0,0
 80001828:	00000013          	addi	x0,x0,0
 8000182c:	00000013          	addi	x0,x0,0
@@ -4364,7 +4364,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0100_mode_s:
 80001838:	00000013          	addi	x0,x0,0
 8000183c:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-80001840:	0004a303          	lw	x6,0(x9)
+80001840:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 80001844:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -4470,7 +4470,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x0100_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0100_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800018e0:	10000493          	addi	x9,x0,256
+800018e0:	700004b7          	lui	x9,0x70000
 800018e4:	00000013          	addi	x0,x0,0
 800018e8:	00000013          	addi	x0,x0,0
 800018ec:	00000013          	addi	x0,x0,0
@@ -4482,7 +4482,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0100_mode_s:
 80001900:	addee7b7          	lui	x15,0xaddee
 80001904:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80001908:	00f4a023          	sw	x15,0(x9)
+80001908:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 8000190c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -4528,7 +4528,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x0100_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0400_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001960:	10000493          	addi	x9,x0,256
+80001960:	700004b7          	lui	x9,0x70000
 80001964:	00000013          	addi	x0,x0,0
 80001968:	00000013          	addi	x0,x0,0
 8000196c:	00000013          	addi	x0,x0,0
@@ -4537,7 +4537,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0400_mode_s:
 80001978:	00000013          	addi	x0,x0,0
 8000197c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80001980:	000480e7          	jalr	x1,0(x9)
+80001980:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80001984:	002480e7          	jalr	x1,2(x9)
 
@@ -4552,7 +4552,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0400_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0400_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800019a0:	10000493          	addi	x9,x0,256
+800019a0:	700004b7          	lui	x9,0x70000
 800019a4:	00000013          	addi	x0,x0,0
 800019a8:	00000013          	addi	x0,x0,0
 800019ac:	00000013          	addi	x0,x0,0
@@ -4561,7 +4561,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0400_mode_s:
 800019b8:	00000013          	addi	x0,x0,0
 800019bc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-800019c0:	000480e7          	jalr	x1,0(x9)
+800019c0:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 800019c4 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x0400_mode_s>:
 800019c4:	00000000          	.word	0x00000000
@@ -4709,7 +4709,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x0400_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0400_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001aa0:	10000493          	addi	x9,x0,256
+80001aa0:	700004b7          	lui	x9,0x70000
 80001aa4:	00000013          	addi	x0,x0,0
 80001aa8:	00000013          	addi	x0,x0,0
 80001aac:	00000013          	addi	x0,x0,0
@@ -4718,7 +4718,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0400_mode_s:
 80001ab8:	00000013          	addi	x0,x0,0
 80001abc:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-80001ac0:	0004a303          	lw	x6,0(x9)
+80001ac0:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 80001ac4:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -4824,7 +4824,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x0400_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0400_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001b60:	10000493          	addi	x9,x0,256
+80001b60:	700004b7          	lui	x9,0x70000
 80001b64:	00000013          	addi	x0,x0,0
 80001b68:	00000013          	addi	x0,x0,0
 80001b6c:	00000013          	addi	x0,x0,0
@@ -4836,7 +4836,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0400_mode_s:
 80001b80:	addee7b7          	lui	x15,0xaddee
 80001b84:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80001b88:	00f4a023          	sw	x15,0(x9)
+80001b88:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 80001b8c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -4882,7 +4882,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x0400_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0800_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001be0:	10000493          	addi	x9,x0,256
+80001be0:	700004b7          	lui	x9,0x70000
 80001be4:	00000013          	addi	x0,x0,0
 80001be8:	00000013          	addi	x0,x0,0
 80001bec:	00000013          	addi	x0,x0,0
@@ -4891,7 +4891,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0800_mode_s:
 80001bf8:	00000013          	addi	x0,x0,0
 80001bfc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80001c00:	000480e7          	jalr	x1,0(x9)
+80001c00:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80001c04:	002480e7          	jalr	x1,2(x9)
 
@@ -4906,7 +4906,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x0800_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0800_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001c20:	10000493          	addi	x9,x0,256
+80001c20:	700004b7          	lui	x9,0x70000
 80001c24:	00000013          	addi	x0,x0,0
 80001c28:	00000013          	addi	x0,x0,0
 80001c2c:	00000013          	addi	x0,x0,0
@@ -4915,7 +4915,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x0800_mode_s:
 80001c38:	00000013          	addi	x0,x0,0
 80001c3c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-80001c40:	000480e7          	jalr	x1,0(x9)
+80001c40:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 80001c44 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x0800_mode_s>:
 80001c44:	00000000          	.word	0x00000000
@@ -5063,7 +5063,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x0800_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0800_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001d20:	10000493          	addi	x9,x0,256
+80001d20:	700004b7          	lui	x9,0x70000
 80001d24:	00000013          	addi	x0,x0,0
 80001d28:	00000013          	addi	x0,x0,0
 80001d2c:	00000013          	addi	x0,x0,0
@@ -5072,7 +5072,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x0800_mode_s:
 80001d38:	00000013          	addi	x0,x0,0
 80001d3c:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-80001d40:	0004a303          	lw	x6,0(x9)
+80001d40:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 80001d44:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -5178,7 +5178,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x0800_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0800_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001de0:	10000493          	addi	x9,x0,256
+80001de0:	700004b7          	lui	x9,0x70000
 80001de4:	00000013          	addi	x0,x0,0
 80001de8:	00000013          	addi	x0,x0,0
 80001dec:	00000013          	addi	x0,x0,0
@@ -5190,7 +5190,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x0800_mode_s:
 80001e00:	addee7b7          	lui	x15,0xaddee
 80001e04:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80001e08:	00f4a023          	sw	x15,0(x9)
+80001e08:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 80001e0c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -5236,7 +5236,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x0800_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x1000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001e60:	10000493          	addi	x9,x0,256
+80001e60:	700004b7          	lui	x9,0x70000
 80001e64:	00000013          	addi	x0,x0,0
 80001e68:	00000013          	addi	x0,x0,0
 80001e6c:	00000013          	addi	x0,x0,0
@@ -5245,7 +5245,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x1000_mode_s:
 80001e78:	00000013          	addi	x0,x0,0
 80001e7c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80001e80:	000480e7          	jalr	x1,0(x9)
+80001e80:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80001e84:	002480e7          	jalr	x1,2(x9)
 
@@ -5260,7 +5260,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x1000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x1000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001ea0:	10000493          	addi	x9,x0,256
+80001ea0:	700004b7          	lui	x9,0x70000
 80001ea4:	00000013          	addi	x0,x0,0
 80001ea8:	00000013          	addi	x0,x0,0
 80001eac:	00000013          	addi	x0,x0,0
@@ -5269,7 +5269,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x1000_mode_s:
 80001eb8:	00000013          	addi	x0,x0,0
 80001ebc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-80001ec0:	000480e7          	jalr	x1,0(x9)
+80001ec0:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 80001ec4 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x1000_mode_s>:
 80001ec4:	00000000          	.word	0x00000000
@@ -5417,7 +5417,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x1000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x1000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80001fa0:	10000493          	addi	x9,x0,256
+80001fa0:	700004b7          	lui	x9,0x70000
 80001fa4:	00000013          	addi	x0,x0,0
 80001fa8:	00000013          	addi	x0,x0,0
 80001fac:	00000013          	addi	x0,x0,0
@@ -5426,7 +5426,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x1000_mode_s:
 80001fb8:	00000013          	addi	x0,x0,0
 80001fbc:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-80001fc0:	0004a303          	lw	x6,0(x9)
+80001fc0:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 80001fc4:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -5532,7 +5532,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x1000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x1000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002060:	10000493          	addi	x9,x0,256
+80002060:	700004b7          	lui	x9,0x70000
 80002064:	00000013          	addi	x0,x0,0
 80002068:	00000013          	addi	x0,x0,0
 8000206c:	00000013          	addi	x0,x0,0
@@ -5544,7 +5544,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x1000_mode_s:
 80002080:	addee7b7          	lui	x15,0xaddee
 80002084:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80002088:	00f4a023          	sw	x15,0(x9)
+80002088:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 8000208c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -5590,7 +5590,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x1000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x2000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800020e0:	10000493          	addi	x9,x0,256
+800020e0:	700004b7          	lui	x9,0x70000
 800020e4:	00000013          	addi	x0,x0,0
 800020e8:	00000013          	addi	x0,x0,0
 800020ec:	00000013          	addi	x0,x0,0
@@ -5599,7 +5599,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x2000_mode_s:
 800020f8:	00000013          	addi	x0,x0,0
 800020fc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80002100:	000480e7          	jalr	x1,0(x9)
+80002100:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80002104:	002480e7          	jalr	x1,2(x9)
 
@@ -5614,7 +5614,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x2000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x2000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002120:	10000493          	addi	x9,x0,256
+80002120:	700004b7          	lui	x9,0x70000
 80002124:	00000013          	addi	x0,x0,0
 80002128:	00000013          	addi	x0,x0,0
 8000212c:	00000013          	addi	x0,x0,0
@@ -5623,7 +5623,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x2000_mode_s:
 80002138:	00000013          	addi	x0,x0,0
 8000213c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-80002140:	000480e7          	jalr	x1,0(x9)
+80002140:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 80002144 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x2000_mode_s>:
 80002144:	00000000          	.word	0x00000000
@@ -5771,7 +5771,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x2000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x2000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002220:	10000493          	addi	x9,x0,256
+80002220:	700004b7          	lui	x9,0x70000
 80002224:	00000013          	addi	x0,x0,0
 80002228:	00000013          	addi	x0,x0,0
 8000222c:	00000013          	addi	x0,x0,0
@@ -5780,7 +5780,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x2000_mode_s:
 80002238:	00000013          	addi	x0,x0,0
 8000223c:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-80002240:	0004a303          	lw	x6,0(x9)
+80002240:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 80002244:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -5886,7 +5886,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x2000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x2000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800022e0:	10000493          	addi	x9,x0,256
+800022e0:	700004b7          	lui	x9,0x70000
 800022e4:	00000013          	addi	x0,x0,0
 800022e8:	00000013          	addi	x0,x0,0
 800022ec:	00000013          	addi	x0,x0,0
@@ -5898,7 +5898,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x2000_mode_s:
 80002300:	addee7b7          	lui	x15,0xaddee
 80002304:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80002308:	00f4a023          	sw	x15,0(x9)
+80002308:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 8000230c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -5944,7 +5944,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x2000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x4000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002360:	10000493          	addi	x9,x0,256
+80002360:	700004b7          	lui	x9,0x70000
 80002364:	00000013          	addi	x0,x0,0
 80002368:	00000013          	addi	x0,x0,0
 8000236c:	00000013          	addi	x0,x0,0
@@ -5953,7 +5953,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x4000_mode_s:
 80002378:	00000013          	addi	x0,x0,0
 8000237c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80002380:	000480e7          	jalr	x1,0(x9)
+80002380:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80002384:	002480e7          	jalr	x1,2(x9)
 
@@ -5968,7 +5968,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x4000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x4000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800023a0:	10000493          	addi	x9,x0,256
+800023a0:	700004b7          	lui	x9,0x70000
 800023a4:	00000013          	addi	x0,x0,0
 800023a8:	00000013          	addi	x0,x0,0
 800023ac:	00000013          	addi	x0,x0,0
@@ -5977,7 +5977,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x4000_mode_s:
 800023b8:	00000013          	addi	x0,x0,0
 800023bc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-800023c0:	000480e7          	jalr	x1,0(x9)
+800023c0:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 800023c4 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x4000_mode_s>:
 800023c4:	00000000          	.word	0x00000000
@@ -6125,7 +6125,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x4000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x4000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800024a0:	10000493          	addi	x9,x0,256
+800024a0:	700004b7          	lui	x9,0x70000
 800024a4:	00000013          	addi	x0,x0,0
 800024a8:	00000013          	addi	x0,x0,0
 800024ac:	00000013          	addi	x0,x0,0
@@ -6134,7 +6134,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x4000_mode_s:
 800024b8:	00000013          	addi	x0,x0,0
 800024bc:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-800024c0:	0004a303          	lw	x6,0(x9)
+800024c0:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 800024c4:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -6240,7 +6240,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x4000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x4000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002560:	10000493          	addi	x9,x0,256
+80002560:	700004b7          	lui	x9,0x70000
 80002564:	00000013          	addi	x0,x0,0
 80002568:	00000013          	addi	x0,x0,0
 8000256c:	00000013          	addi	x0,x0,0
@@ -6252,7 +6252,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x4000_mode_s:
 80002580:	addee7b7          	lui	x15,0xaddee
 80002584:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80002588:	00f4a023          	sw	x15,0(x9)
+80002588:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 8000258c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -6298,7 +6298,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x4000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x8000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800025e0:	10000493          	addi	x9,x0,256
+800025e0:	700004b7          	lui	x9,0x70000
 800025e4:	00000013          	addi	x0,x0,0
 800025e8:	00000013          	addi	x0,x0,0
 800025ec:	00000013          	addi	x0,x0,0
@@ -6307,7 +6307,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x8000_mode_s:
 800025f8:	00000013          	addi	x0,x0,0
 800025fc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80002600:	000480e7          	jalr	x1,0(x9)
+80002600:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80002604:	002480e7          	jalr	x1,2(x9)
 
@@ -6322,7 +6322,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0x8000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x8000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002620:	10000493          	addi	x9,x0,256
+80002620:	700004b7          	lui	x9,0x70000
 80002624:	00000013          	addi	x0,x0,0
 80002628:	00000013          	addi	x0,x0,0
 8000262c:	00000013          	addi	x0,x0,0
@@ -6331,7 +6331,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0x8000_mode_s:
 80002638:	00000013          	addi	x0,x0,0
 8000263c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-80002640:	000480e7          	jalr	x1,0(x9)
+80002640:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 80002644 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0x8000_mode_s>:
 80002644:	00000000          	.word	0x00000000
@@ -6479,7 +6479,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0x8000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x8000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002720:	10000493          	addi	x9,x0,256
+80002720:	700004b7          	lui	x9,0x70000
 80002724:	00000013          	addi	x0,x0,0
 80002728:	00000013          	addi	x0,x0,0
 8000272c:	00000013          	addi	x0,x0,0
@@ -6488,7 +6488,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0x8000_mode_s:
 80002738:	00000013          	addi	x0,x0,0
 8000273c:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-80002740:	0004a303          	lw	x6,0(x9)
+80002740:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 80002744:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -6594,7 +6594,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0x8000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x8000_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800027e0:	10000493          	addi	x9,x0,256
+800027e0:	700004b7          	lui	x9,0x70000
 800027e4:	00000013          	addi	x0,x0,0
 800027e8:	00000013          	addi	x0,x0,0
 800027ec:	00000013          	addi	x0,x0,0
@@ -6606,7 +6606,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0x8000_mode_s:
 80002800:	addee7b7          	lui	x15,0xaddee
 80002804:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80002808:	00f4a023          	sw	x15,0(x9)
+80002808:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 8000280c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -6652,7 +6652,7 @@ ExceptionsSm_cg_cp_medeleg_msu_ecall_mdlg_0x8000_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0xb1ff_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002860:	10000493          	addi	x9,x0,256
+80002860:	700004b7          	lui	x9,0x70000
 80002864:	00000013          	addi	x0,x0,0
 80002868:	00000013          	addi	x0,x0,0
 8000286c:	00000013          	addi	x0,x0,0
@@ -6661,7 +6661,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0xb1ff_mode_s:
 80002878:	00000013          	addi	x0,x0,0
 8000287c:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)  # aligned target
-80002880:	000480e7          	jalr	x1,0(x9)
+80002880:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   jalr x1, 2(x9)  # misaligned target
 80002884:	002480e7          	jalr	x1,2(x9)
 
@@ -6676,7 +6676,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instrmisaligned_mdlg_0xb1ff_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0xb1ff_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800028a0:	10000493          	addi	x9,x0,256
+800028a0:	700004b7          	lui	x9,0x70000
 800028a4:	00000013          	addi	x0,x0,0
 800028a8:	00000013          	addi	x0,x0,0
 800028ac:	00000013          	addi	x0,x0,0
@@ -6685,7 +6685,7 @@ ExceptionsSm_cg_cp_medeleg_msu_instraccessfault_mdlg_0xb1ff_mode_s:
 800028b8:	00000013          	addi	x0,x0,0
 800028bc:	00000013          	addi	x0,x0,0
   jalr x1, 0(x9)
-800028c0:	000480e7          	jalr	x1,0(x9)
+800028c0:	000480e7          	jalr	x1,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
 
 800028c4 <ExceptionsSm_cg_cp_medeleg_msu_illegalinstr_zeros_mdlg_0xb1ff_mode_s>:
 800028c4:	00000000          	.word	0x00000000
@@ -6833,7 +6833,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadmisaligned_mdlg_0xb1ff_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0xb1ff_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-800029a0:	10000493          	addi	x9,x0,256
+800029a0:	700004b7          	lui	x9,0x70000
 800029a4:	00000013          	addi	x0,x0,0
 800029a8:	00000013          	addi	x0,x0,0
 800029ac:	00000013          	addi	x0,x0,0
@@ -6842,7 +6842,7 @@ ExceptionsSm_cg_cp_medeleg_msu_loadaccessfault_mdlg_0xb1ff_mode_s:
 800029b8:	00000013          	addi	x0,x0,0
 800029bc:	00000013          	addi	x0,x0,0
   lw x6, 0(x9)
-800029c0:	0004a303          	lw	x6,0(x9)
+800029c0:	0004a303          	lw	x6,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   lh x6, 0(x9)
 800029c4:	00049303          	lh	x6,0(x9)
   lhu x6, 0(x9)
@@ -6948,7 +6948,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storemisaligned_mdlg_0xb1ff_mode_s:
 #ifdef RVMODEL_ACCESS_FAULT_ADDRESS
 ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0xb1ff_mode_s:
   LA(x9, RVMODEL_ACCESS_FAULT_ADDRESS)
-80002a60:	10000493          	addi	x9,x0,256
+80002a60:	700004b7          	lui	x9,0x70000
 80002a64:	00000013          	addi	x0,x0,0
 80002a68:	00000013          	addi	x0,x0,0
 80002a6c:	00000013          	addi	x0,x0,0
@@ -6960,7 +6960,7 @@ ExceptionsSm_cg_cp_medeleg_msu_storeaccessfault_mdlg_0xb1ff_mode_s:
 80002a80:	addee7b7          	lui	x15,0xaddee
 80002a84:	cab78793          	addi	x15,x15,-853 # addedcab <_end+0x2ddb6cab>
   sw x15, 0(x9)
-80002a88:	00f4a023          	sw	x15,0(x9)
+80002a88:	00f4a023          	sw	x15,0(x9) # 70000000 <UART_LSR+0x5ffffffb>
   sh x15, 0(x9)
 80002a8c:	00f49023          	sh	x15,0(x9)
   sb x15, 0(x9)
@@ -8185,9 +8185,9 @@ RVTEST_CODE_END
 80003bb4:	04039c63          	bne	x7,x0,80003c0c <sv_Mepc>
 
 80003bb8 <vmem_adj_Mepc>:
-80003bb8:	10000393          	addi	x7,x0,256
+80003bb8:	700003b7          	lui	x7,0x70000
 80003bbc:	04740863          	beq	x8,x7,80003c0c <sv_Mepc>
-80003bc0:	00238393          	addi	x7,x7,2
+80003bc0:	00238393          	addi	x7,x7,2 # 70000002 <UART_LSR+0x5ffffffd>
 80003bc4:	04740463          	beq	x8,x7,80003c0c <sv_Mepc>
 80003bc8:	04040263          	beq	x8,x0,80003c0c <sv_Mepc>
 80003bcc:	2084a383          	lw	x7,520(x9)
@@ -8834,9 +8834,9 @@ RVTEST_CODE_END
 80004504:	06039063          	bne	x7,x0,80004564 <sv_Sepc>
 
 80004508 <vmem_adj_Sepc>:
-80004508:	10000393          	addi	x7,x0,256
+80004508:	700003b7          	lui	x7,0x70000
 8000450c:	04740c63          	beq	x8,x7,80004564 <sv_Sepc>
-80004510:	00238393          	addi	x7,x7,2
+80004510:	00238393          	addi	x7,x7,2 # 70000002 <UART_LSR+0x5ffffffd>
 80004514:	04740863          	beq	x8,x7,80004564 <sv_Sepc>
 80004518:	04040663          	beq	x8,x0,80004564 <sv_Sepc>
 8000451c:	2084a383          	lw	x7,520(x9)
